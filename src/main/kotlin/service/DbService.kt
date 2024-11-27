@@ -216,7 +216,7 @@ class DbService(
                     name = resultSet.getString("target_table")!!,
                 ),
             )
-            val ref = Table.ForeignKey.Reference(
+            val ref = Table.ForeignKey.KeyPair(
                 sourceColumn = Table.ColumnName(resultSet.getString("source_column")!!),
                 targetColumn = Table.ColumnName(resultSet.getString("target_column")!!),
             )
@@ -224,11 +224,19 @@ class DbService(
         }
             .groupBy({ it.first }, { it.second })
             .map { (meta, refs) ->
-                meta.sourceTable to Table.ForeignKey(
-                    name = meta.name,
-                    targetTable = meta.targetTable,
-                    references = refs.toSet(),
-                )
+                val key = if (refs.size == 1)
+                    Table.ForeignKey.SingleKey(
+                        name = meta.name,
+                        targetTable = meta.targetTable,
+                        reference = refs.single(),
+                    )
+                else
+                    Table.ForeignKey.MultiKey(
+                        name = meta.name,
+                        targetTable = meta.targetTable,
+                        references = refs.toSet(),
+                    )
+                meta.sourceTable to key
             }.groupBy({ it.first }, { it.second })
     }
 

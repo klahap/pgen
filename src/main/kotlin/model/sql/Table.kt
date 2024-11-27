@@ -49,14 +49,25 @@ data class Table(
 
     data class PrimaryKey(val keyName: String, val columnNames: List<ColumnName>)
 
-    data class ForeignKey(
-        val name: String,
-        val targetTable: SqlTableName,
-        val references: Set<Reference>
-    ) {
-        data class Reference(
+    sealed interface ForeignKey {
+        val name: String
+        val targetTable: SqlTableName
+
+        data class KeyPair(
             val sourceColumn: ColumnName,
             val targetColumn: ColumnName,
         )
+
+        data class SingleKey(
+            override val name: String,
+            override val targetTable: SqlTableName,
+            val reference: KeyPair,
+        ) : ForeignKey
+
+        data class MultiKey(
+            override val name: String,
+            override val targetTable: SqlTableName,
+            val references: Set<KeyPair>,
+        ) : ForeignKey
     }
 }

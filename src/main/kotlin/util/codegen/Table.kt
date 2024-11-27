@@ -12,6 +12,8 @@ import io.github.klahap.pgen.util.makeDifferent
 
 context(CodeGenContext)
 internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.name.prettyName) {
+    val foreignKeysSingle = this@toTypeSpecInternal.foreignKeys.filterIsInstance<Table.ForeignKey.SingleKey>()
+        .associate { it.reference.sourceColumn to (it.targetTable to it.reference.targetColumn) }
     superclass(Poet.table)
     addSuperclassConstructorParameter("%S", this@toTypeSpecInternal.name.name)
     this@toTypeSpecInternal.columns.forEach { column ->
@@ -23,10 +25,19 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
                         .parameterizedBy(column.type.getTypeName())
 
                     else -> column.type.getTypeName()
-                }
+                }.copy(nullable = column.isNullable),
             ),
         ) {
-            initializer(column)
+            val postArgs = mutableListOf<Any>()
+            val postFix = buildString {
+                foreignKeysSingle[column.name]?.let { foreignKey ->
+                    append(".references(%T.${foreignKey.second.pretty})")
+                    postArgs.add(foreignKey.first.typeName)
+                }
+                if (column.isNullable)
+                    append(".nullable()")
+            }
+            initializer(column, postFix = postFix, postArgs = postArgs.toTypedArray())
         }
     }
     if (this@toTypeSpecInternal.primaryKey != null) {
@@ -41,15 +52,17 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
         }
     }
 
-    addInitializerBlock {
-        this@toTypeSpecInternal.foreignKeys.forEach { foreignKey ->
-            val foreignKeyStrFormat = foreignKey.references.joinToString(", ") { ref ->
-                "${ref.sourceColumn.pretty} to %T.${ref.targetColumn.pretty}"
+    val foreignKeysMulti = this@toTypeSpecInternal.foreignKeys.filterIsInstance<Table.ForeignKey.MultiKey>()
+    if (foreignKeysMulti.isNotEmpty())
+        addInitializerBlock {
+            foreignKeysMulti.forEach { foreignKey ->
+                val foreignKeyStrFormat = foreignKey.references.joinToString(", ") { ref ->
+                    "${ref.sourceColumn.pretty} to %T.${ref.targetColumn.pretty}"
+                }
+                val foreignKeyStrValues = foreignKey.references.map {
+                    foreignKey.targetTable.typeName
+                }.toTypedArray()
+                addStatement("foreignKey($foreignKeyStrFormat)", *foreignKeyStrValues)
             }
-            val foreignKeyStrValues = foreignKey.references.map {
-                foreignKey.targetTable.typeName
-            }.toTypedArray()
-            addStatement("foreignKey($foreignKeyStrFormat)", *foreignKeyStrValues)
         }
-    }
 }

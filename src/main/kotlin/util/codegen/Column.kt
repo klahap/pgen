@@ -38,70 +38,83 @@ fun Table.Column.Type.getTypeName(): TypeName {
 }
 
 context(CodeGenContext)
-fun PropertySpec.Builder.initializer(column: Table.Column) {
+fun PropertySpec.Builder.initializer(column: Table.Column, postFix: String, vararg postArgs: Any) {
     val columnName = column.name.value
     when (val type = column.type) {
-        is Table.Column.Type.Array -> initializer("array<%T>(name = %S)", type.getTypeName(), columnName)
+        is Table.Column.Type.Array -> initializer(
+            "array<%T>(name = %S)$postFix",
+            type.getTypeName(), columnName, *postArgs
+        )
+
         is Table.Column.Type.Enum -> initializer(
             """
             customEnumeration(
                 name = %S,
                 sql = %S,
-                fromDb = { %T(it as String) },
+                fromDb = { %T<%T>(it as String) },
                 toDb = { it.toPgObject() },
-            )""".trimIndent(), columnName, type.name.name, typeNameGetPgEnumByLabel
+            )$postFix""".trimIndent(),
+            columnName,
+            type.name.name,
+            typeNameGetPgEnumByLabel,
+            type.name.typeName,
+            *postArgs
         )
 
-        Table.Column.Type.Int8 -> initializer("long(name = %S)", columnName)
-        Table.Column.Type.Bool -> initializer("bool(name = %S)", columnName)
-        Table.Column.Type.VarChar -> initializer("text(name = %S)", columnName)
-        Table.Column.Type.Date -> initializer("%T(name = %S)", Poet.date, columnName)
-        Table.Column.Type.Interval -> initializer("duration(name = %S)", columnName)
+        Table.Column.Type.Int8 -> initializer("long(name = %S)$postFix", columnName, *postArgs)
+        Table.Column.Type.Bool -> initializer("bool(name = %S)$postFix", columnName, *postArgs)
+        Table.Column.Type.VarChar -> initializer("text(name = %S)$postFix", columnName, *postArgs)
+        Table.Column.Type.Date -> initializer("%T(name = %S)$postFix", Poet.date, columnName, *postArgs)
+        Table.Column.Type.Interval -> initializer("duration(name = %S)$postFix", columnName, *postArgs)
         Table.Column.Type.Int4Range -> initializer(
-            "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt4RangeColumnType
+            "registerColumn(name = %S, type = %T())$postFix",
+            columnName, typeNameInt4RangeColumnType, *postArgs
         )
 
         Table.Column.Type.Int8Range -> initializer(
-            "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt8RangeColumnType
+            "registerColumn(name = %S, type = %T())$postFix",
+            columnName, typeNameInt8RangeColumnType, *postArgs
         )
 
         Table.Column.Type.Int4MultiRange -> initializer(
-            "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt4MultiRangeColumnType
+            "registerColumn(name = %S, type = %T())$postFix",
+            columnName, typeNameInt4MultiRangeColumnType, *postArgs
         )
 
         Table.Column.Type.Int8MultiRange -> initializer(
-            "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt8MultiRangeColumnType
+            "registerColumn(name = %S, type = %T())$postFix",
+            columnName, typeNameInt8MultiRangeColumnType, *postArgs
         )
 
-        Table.Column.Type.Int4 -> initializer("integer(name = %S)", columnName)
+        Table.Column.Type.Int4 -> initializer("integer(name = %S)$postFix", columnName, *postArgs)
         Table.Column.Type.Json -> initializer(
-            "%T<%T>(name = %S, serialize = %T)",
-            Poet.jsonColumn, Poet.jsonElement, columnName, Poet.json,
+            "%T<%T>(name = %S, serialize = %T)$postFix",
+            Poet.jsonColumn, Poet.jsonElement, columnName, Poet.json, *postArgs
         )
 
         Table.Column.Type.Jsonb -> initializer(
-            "%T<%T>(name = %S, jsonConfig = %T)",
-            Poet.jsonColumn, Poet.jsonElement, columnName, Poet.json,
+            "%T<%T>(name = %S, jsonConfig = %T)$postFix",
+            Poet.jsonColumn, Poet.jsonElement, columnName, Poet.json, *postArgs
         )
 
         is Table.Column.Type.Numeric -> initializer(
-            "decimal(name = %S, precision = ${type.precision}, scale = ${type.scale})",
-            columnName,
+            "decimal(name = %S, precision = ${type.precision}, scale = ${type.scale})$postFix",
+            columnName, *postArgs
         )
 
-        Table.Column.Type.Int2 -> initializer("short(name = %S)", columnName)
-        Table.Column.Type.Text -> initializer("text(name = %S)", columnName)
-        Table.Column.Type.Time -> initializer("%T(name = %S)", Poet.time, columnName)
-        Table.Column.Type.Timestamp -> initializer("%T(name = %S)", Poet.timestamp, columnName)
-        Table.Column.Type.TimestampWithTimeZone -> initializer("%T(name = %S)", Poet.timestampWithTimeZone, columnName)
-        Table.Column.Type.Uuid -> initializer("uuid(name = %S)", columnName)
+        Table.Column.Type.Int2 -> initializer("short(name = %S)$postFix", columnName, *postArgs)
+        Table.Column.Type.Text -> initializer("text(name = %S)$postFix", columnName, *postArgs)
+        Table.Column.Type.Time -> initializer("%T(name = %S)$postFix", Poet.time, columnName, *postArgs)
+        Table.Column.Type.Timestamp -> initializer("%T(name = %S)$postFix", Poet.timestamp, columnName, *postArgs)
+        Table.Column.Type.TimestampWithTimeZone -> initializer(
+            "%T(name = %S)$postFix",
+            Poet.timestampWithTimeZone, columnName, *postArgs
+        )
+
+        Table.Column.Type.Uuid -> initializer("uuid(name = %S)$postFix", columnName, *postArgs)
         Table.Column.Type.UnconstrainedNumeric -> initializer(
-            "registerColumn(name = %S, type = %T())",
-            columnName, typeNameUnconstrainedNumericColumnType
+            "registerColumn(name = %S, type = %T())$postFix",
+            columnName, typeNameUnconstrainedNumericColumnType, *postArgs
         )
     }
 }
