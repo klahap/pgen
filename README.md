@@ -14,11 +14,15 @@ Simplify your workflow by automating the creation of table mappings and keeping 
 
 ## Installation
 
-Add the plugin to your `build.gradle.kts`:
+Add the plugin and library to your `build.gradle.kts`:
 
 ```kotlin
 plugins {
     id("io.github.klahap.pgen") version "$VERSION"
+}
+
+dependencies {
+    implementation("io.github.klahap:pgenlib:$VERSION")
 }
 ```
 

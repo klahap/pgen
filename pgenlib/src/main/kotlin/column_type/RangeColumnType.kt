@@ -1,11 +1,11 @@
-package default_code.column_type
+package column_type
 
 import org.jetbrains.exposed.sql.ColumnType
 import org.jetbrains.exposed.sql.statements.api.PreparedStatementApi
 import org.postgresql.util.PGobject
 
-abstract class RangeColumnType<T : Comparable<T>, R : ClosedRange<T>> : ColumnType<R>() {
-    abstract fun String.parse(): R
+public abstract class RangeColumnType<T : Comparable<T>, R : ClosedRange<T>> : ColumnType<R>() {
+    public abstract fun String.parse(): R
 
     override fun nonNullValueToString(value: R): String = value.toPgRangeString()
 

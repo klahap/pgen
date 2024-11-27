@@ -1,12 +1,12 @@
-package default_code.column_type
+package column_type
 
 import org.jetbrains.exposed.sql.ColumnType
 import org.jetbrains.exposed.sql.statements.api.PreparedStatementApi
 import org.postgresql.util.PGobject
 
 
-abstract class MultiRangeColumnType<T : Comparable<T>> : ColumnType<MultiRange<T>>() {
-    abstract fun String.parse(): MultiRange<T>
+public abstract class MultiRangeColumnType<T : Comparable<T>> : ColumnType<MultiRange<T>>() {
+    public abstract fun String.parse(): MultiRange<T>
 
     override fun nonNullValueToString(value: MultiRange<T>): String =
         value.joinToString(separator = ",", prefix = "{", postfix = "}") { it.toPgRangeString() }

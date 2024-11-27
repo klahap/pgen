@@ -9,7 +9,6 @@ import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.SqlObject
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.service.DirectorySyncService
-import io.github.klahap.pgen.util.DefaultCodeFile
 import java.time.OffsetDateTime
 
 object Poet {
@@ -30,6 +29,17 @@ object Poet {
     val localTime = ClassName("kotlinx.datetime", "LocalTime")
     val localDate = ClassName("kotlinx.datetime", "LocalDate")
     val offsetDateTime = OffsetDateTime::class.asTypeName()
+
+    private const val PACKAGE_CUSTOM_COLUMN = "io.github.klahap.pgenlib.column_type"
+    val multiRange = ClassName(PACKAGE_CUSTOM_COLUMN, "MultiRange")
+    val int4RangeColumnType = ClassName(PACKAGE_CUSTOM_COLUMN, "Int4RangeColumnType")
+    val int8RangeColumnType = ClassName(PACKAGE_CUSTOM_COLUMN, "Int8RangeColumnType")
+    val int4MultiRangeColumnType = ClassName(PACKAGE_CUSTOM_COLUMN, "Int4MultiRangeColumnType")
+    val int8MultiRangeColumnType = ClassName(PACKAGE_CUSTOM_COLUMN, "Int8MultiRangeColumnType")
+    val unconstrainedNumericColumnType = ClassName(PACKAGE_CUSTOM_COLUMN, "UnconstrainedNumericColumnType")
+
+    val pgEnum = ClassName(PACKAGE_CUSTOM_COLUMN, "PgEnum")
+    val getPgEnumByLabel = ClassName(PACKAGE_CUSTOM_COLUMN, "getPgEnumByLabel")
 }
 
 context(CodeGenContext)
@@ -59,15 +69,6 @@ fun DirectorySyncService.sync(
                 block()
             }
         )
-    )
-}
-
-context(CodeGenContext)
-fun DirectorySyncService.sync(codeFile: DefaultCodeFile) {
-    val packageName = rootPackageName + codeFile.relativePackageName
-    sync(
-        relativePath = packageName.toRelativePath() + "/" + codeFile.fileName,
-        content = codeFile.getContent()
     )
 }
 

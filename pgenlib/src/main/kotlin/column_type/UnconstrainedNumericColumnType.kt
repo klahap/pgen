@@ -1,4 +1,4 @@
-package default_code.column_type
+package column_type
 
 import org.jetbrains.exposed.sql.ColumnType
 import java.math.BigDecimal
@@ -6,7 +6,7 @@ import java.sql.ResultSet
 import java.sql.SQLException
 
 
-class UnconstrainedNumericColumnType : ColumnType<BigDecimal>() {
+public class UnconstrainedNumericColumnType : ColumnType<BigDecimal>() {
     override fun sqlType(): String = "NUMERIC"
 
     override fun readObject(rs: ResultSet, index: Int): Any? {

@@ -5,14 +5,14 @@ import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.model.Config
 import io.github.klahap.pgen.service.DbService
 import io.github.klahap.pgen.service.DirectorySyncService.Companion.directorySync
-import io.github.klahap.pgen.util.DefaultCodeFile
 import io.github.klahap.pgen.service.EnvFileService
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.sync
 import org.gradle.api.Project
 
 private fun generate(config: Config) {
-    val (tables, enums) = DbService(config.dbConnectionConfig).use { dbService ->
+    val dbConfig = config.dbConnectionConfig ?: error("no DB connection config defined")
+    val (tables, enums) = DbService(dbConfig).use { dbService ->
         val tables = dbService.getTablesWithForeignTables(config.tableFilter)
         val enumNames = tables.asSequence().flatMap { it.columns }.map { it.type }
             .map { if (it is Table.Column.Type.Array) it.elementType else it }
@@ -29,7 +29,6 @@ private fun generate(config: Config) {
     )
     with(context) {
         directorySync(config.outputPath) {
-            DefaultCodeFile.all().forEach { sync(it) }
             enums.forEach { sync(it) }
             tables.forEach { sync(it) }
             cleanup()

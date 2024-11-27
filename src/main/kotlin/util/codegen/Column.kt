@@ -21,8 +21,8 @@ fun Table.Column.Type.getTypeName(): TypeName {
         Table.Column.Type.Interval -> Poet.duration
         Table.Column.Type.Int4Range -> IntRange::class.asTypeName()
         Table.Column.Type.Int8Range -> LongRange::class.asTypeName()
-        Table.Column.Type.Int4MultiRange -> typeNameMultiRange.parameterizedBy(Int::class.asTypeName())
-        Table.Column.Type.Int8MultiRange -> typeNameMultiRange.parameterizedBy(Long::class.asTypeName())
+        Table.Column.Type.Int4MultiRange -> Poet.multiRange.parameterizedBy(Int::class.asTypeName())
+        Table.Column.Type.Int8MultiRange -> Poet.multiRange.parameterizedBy(Long::class.asTypeName())
         Table.Column.Type.Int4 -> Int::class.asTypeName()
         Table.Column.Type.Json -> Poet.jsonElement
         Table.Column.Type.Jsonb -> Poet.jsonElement
@@ -49,7 +49,7 @@ fun PropertySpec.Builder.initializer(column: Table.Column) {
                 sql = %S,
                 fromDb = { %T(it as String) },
                 toDb = { it.toPgObject() },
-            )""".trimIndent(), columnName, type.name.name, typeNameGetPgEnumByLabel
+            )""".trimIndent(), columnName, type.name.name, Poet.getPgEnumByLabel
         )
 
         Table.Column.Type.Int8 -> initializer("long(name = %S)", columnName)
@@ -59,22 +59,22 @@ fun PropertySpec.Builder.initializer(column: Table.Column) {
         Table.Column.Type.Interval -> initializer("duration(name = %S)", columnName)
         Table.Column.Type.Int4Range -> initializer(
             "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt4RangeColumnType
+            columnName, Poet.int4RangeColumnType
         )
 
         Table.Column.Type.Int8Range -> initializer(
             "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt8RangeColumnType
+            columnName, Poet.int8RangeColumnType
         )
 
         Table.Column.Type.Int4MultiRange -> initializer(
             "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt4MultiRangeColumnType
+            columnName, Poet.int4MultiRangeColumnType
         )
 
         Table.Column.Type.Int8MultiRange -> initializer(
             "registerColumn(name = %S, type = %T())",
-            columnName, typeNameInt8MultiRangeColumnType
+            columnName, Poet.int8MultiRangeColumnType
         )
 
         Table.Column.Type.Int4 -> initializer("integer(name = %S)", columnName)
@@ -101,7 +101,7 @@ fun PropertySpec.Builder.initializer(column: Table.Column) {
         Table.Column.Type.Uuid -> initializer("uuid(name = %S)", columnName)
         Table.Column.Type.UnconstrainedNumeric -> initializer(
             "registerColumn(name = %S, type = %T())",
-            columnName, typeNameUnconstrainedNumericColumnType
+            columnName, Poet.unconstrainedNumericColumnType
         )
     }
 }

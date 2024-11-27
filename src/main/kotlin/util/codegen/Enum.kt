@@ -7,7 +7,7 @@ import io.github.klahap.pgen.util.toSnakeCase
 
 context(CodeGenContext)
 internal fun Enum.toTypeSpecInternal() = buildEnum(this@toTypeSpecInternal.name.prettyName) {
-    addSuperinterface(typeNamePgEnum)
+    addSuperinterface(Poet.pgEnum)
     primaryConstructor {
         addParameter("pgEnumLabel", String::class)
         addProperty(name = "pgEnumLabel", type = String::class.asTypeName()) {

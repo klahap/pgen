@@ -6,7 +6,7 @@ import java.nio.file.Path
 import kotlin.io.path.Path
 
 data class Config(
-    val dbConnectionConfig: DbConnectionConfig,
+    val dbConnectionConfig: DbConnectionConfig?,
     val packageName: PackageName,
     val tableFilter: SqlObjectFilter,
     val outputPath: Path,
@@ -51,7 +51,7 @@ data class Config(
         }
 
         fun build() = Config(
-            dbConnectionConfig = dbConnectionConfig ?: error("no DB connection config defined"),
+            dbConnectionConfig = dbConnectionConfig,
             packageName = packageName?.let { PackageName(it) } ?: error("no output package defined"),
             tableFilter = tableFilter ?: error("no table filter defined"),
             outputPath = outputPath ?: error("no output path defined"),
