@@ -1,4 +1,4 @@
-package column_type
+package default_code.column_type
 
 internal fun List<RawRange>.toInt4MultiRange(): MultiRange<Int> = MultiRange(map { it.toInt4Range() }.toSet())
 internal fun List<RawRange>.toInt8MultiRange(): MultiRange<Long> = MultiRange(map { it.toInt8Range() }.toSet())

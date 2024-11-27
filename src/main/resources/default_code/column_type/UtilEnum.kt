@@ -1,19 +1,19 @@
-package column_type
+package default_code.column_type
 
 import org.postgresql.util.PGobject
 import kotlin.enums.enumEntries
 
-public interface PgEnum {
-    public val pgEnumTypeName: String
-    public val pgEnumLabel: String
+interface PgEnum {
+    val pgEnumTypeName: String
+    val pgEnumLabel: String
 
-    public fun toPgObject(): PGobject = PGobject().apply {
+    fun toPgObject() = PGobject().apply {
         value = pgEnumLabel
         type = pgEnumTypeName
     }
 }
 
-public inline fun <reified T> getPgEnumByLabel(label: String): T
+inline fun <reified T> getPgEnumByLabel(label: String): T
         where T : Enum<T>,
               T : PgEnum {
     return enumEntries<T>().singleOrNull { e -> e.pgEnumLabel == label }
