@@ -12,7 +12,9 @@ import io.github.klahap.pgen.util.codegen.sync
 import org.gradle.api.Project
 
 private fun generate(config: Config) {
-    val (tables, enums) = DbService(config.dbConnectionConfig).use { dbService ->
+    val (tables, enums) = DbService(
+        config.dbConnectionConfig ?: error("no DB connection config defined")
+    ).use { dbService ->
         val tables = dbService.getTablesWithForeignTables(config.tableFilter)
         val enumNames = tables.asSequence().flatMap { it.columns }.map { it.type }
             .map { if (it is Table.Column.Type.Array) it.elementType else it }
