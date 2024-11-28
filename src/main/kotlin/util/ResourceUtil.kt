@@ -26,6 +26,7 @@ data class DefaultCodeFile(
             DefaultCodeFile("column_type", "UtilMultiRange.kt"),
             DefaultCodeFile("column_type", "UtilRange.kt"),
             DefaultCodeFile("column_type", "UtilEnum.kt"),
+            DefaultCodeFile("util", "BatchUpdateStatementDsl.kt"),
         )
     }
 }

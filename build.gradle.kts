@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 plugins {
     id("com.gradle.plugin-publish") version "1.2.1"
     kotlin("jvm") version "2.0.20"
+    kotlin("plugin.serialization") version "2.0.20"
 }
 
 val groupStr = "io.github.klahap.pgen"
@@ -19,6 +20,7 @@ repositories {
 dependencies {
     implementation("com.squareup:kotlinpoet:2.0.0")
     implementation("org.postgresql:postgresql:42.7.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }
 
 kotlin {

@@ -8,7 +8,7 @@ sealed interface SqlObjectFilter {
 
     data class Schemas(val schemaNames: Set<SchemaName>) : SqlObjectFilter {
         override fun toFilterString(schemaField: String, tableField: String): String {
-            val schemasStr = schemaNames.toSet().joinToString(",") { "'$it'" }
+            val schemasStr = schemaNames.toSet().joinToString(",") { "'${it.schemaName}'" }
             return "$schemaField IN ($schemasStr)"
         }
 
@@ -18,12 +18,12 @@ sealed interface SqlObjectFilter {
 
     data class Objects(val objectNames: Set<SqlObjectName>) : SqlObjectFilter {
         override fun toFilterString(schemaField: String, tableField: String): String {
-            val objectsStr = objectNames.joinToString(",") { "('${it.schema}','${it.name}')" }
+            val objectsStr = objectNames.joinToString(",") { "('${it.schema.schemaName}','${it.name}')" }
             return "($schemaField, $tableField) IN ($objectsStr)"
         }
 
         override fun isEmpty(): Boolean = objectNames.isEmpty()
-        override fun exactSizeOrNull(): Int? = objectNames.size
+        override fun exactSizeOrNull(): Int = objectNames.size
     }
 
     data class Multi(
@@ -49,12 +49,14 @@ sealed interface SqlObjectFilter {
     }
 
     class Builder(
-        val schemas: MutableSet<SchemaName> = mutableSetOf(),
-        val tables: MutableSet<SqlTableName> = mutableSetOf(),
+        private val dbName: DbName,
     ) {
-        fun addSchema(name: String) = schemas.add(SchemaName(name))
-        fun addSchemas(vararg names: String) = schemas.addAll(names.map { SchemaName(it) })
-        fun addTable(schema: String, table: String) = tables.add(SqlTableName(SchemaName(schema), table))
+        private val schemas: MutableSet<SchemaName> = mutableSetOf()
+        private val tables: MutableSet<SqlTableName> = mutableSetOf()
+
+        fun addSchema(name: String) = schemas.add(dbName.toSchema(name))
+        fun addSchemas(vararg names: String) = schemas.addAll(names.map { dbName.toSchema(it) })
+        fun addTable(schema: String, table: String) = tables.add(SqlTableName(dbName.toSchema(schema), table))
         fun build(): SqlObjectFilter {
             val schemaFilter = Schemas(schemas).takeIf { it.isNotEmpty() }
             val tableFilter = Objects(tables).takeIf { it.isNotEmpty() }

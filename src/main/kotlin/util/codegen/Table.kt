@@ -12,7 +12,8 @@ import io.github.klahap.pgen.util.makeDifferent
 
 context(CodeGenContext)
 internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.name.prettyName) {
-    val foreignKeysSingle = this@toTypeSpecInternal.foreignKeys.filterIsInstance<Table.ForeignKey.SingleKey>()
+    val foreignKeysSingle = this@toTypeSpecInternal.foreignKeys.map { it.toTyped() }
+        .filterIsInstance<Table.ForeignKeyTyped.SingleKey>()
         .associate { it.reference.sourceColumn to (it.targetTable to it.reference.targetColumn) }
     superclass(Poet.table)
     addSuperclassConstructorParameter("%S", this@toTypeSpecInternal.name.name)
@@ -52,7 +53,8 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
         }
     }
 
-    val foreignKeysMulti = this@toTypeSpecInternal.foreignKeys.filterIsInstance<Table.ForeignKey.MultiKey>()
+    val foreignKeysMulti = this@toTypeSpecInternal.foreignKeys.map { it.toTyped() }
+        .filterIsInstance<Table.ForeignKeyTyped.MultiKey>()
     if (foreignKeysMulti.isNotEmpty())
         addInitializerBlock {
             foreignKeysMulti.forEach { foreignKey ->

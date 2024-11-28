@@ -12,10 +12,14 @@ import java.sql.DriverManager
 import java.sql.ResultSet
 
 class DbService(
-    config: Config.DbConnectionConfig
+    val dbName: DbName,
+    connectionConfig: Config.Db.DbConnectionConfig
 ) : Closeable {
-    private val connection =
-        DriverManager.getConnection("${config.url}?prepareThreshold=0", config.user, config.password)
+    private val connection = DriverManager.getConnection(
+        "${connectionConfig.url}?prepareThreshold=0",
+        connectionConfig.user,
+        connectionConfig.password
+    )
 
     fun getTablesWithForeignTables(filter: SqlObjectFilter): List<Table> {
         return buildList {
@@ -51,7 +55,7 @@ class DbService(
         udtNameOverride: String? = null,
         columnTypeCategoryOverride: String? = null,
     ): Type {
-        val schema = SchemaName(getString("column_type_schema")!!)
+        val schema = dbName.toSchema(getString("column_type_schema")!!)
         val columnName = udtNameOverride ?: getString("column_type_name")!!
         val columnTypeCategory = columnTypeCategoryOverride ?: getString("column_type_category")!!
         if (columnName.startsWith("_")) return Array(
@@ -60,7 +64,7 @@ class DbService(
                 columnTypeCategoryOverride = getString("column_element_type_category")!!
             )
         )
-        if (schema != SchemaName.PG_CATALOG) return when (columnTypeCategory) {
+        if (schema != dbName.schemaPgCatalog) return when (columnTypeCategory) {
             "E" -> Type.Enum(SqlEnumName(schema = schema, name = columnName))
             else -> error("Unknown column type '$columnTypeCategory' for column_type column type '$schema:$columnName'")
         }
@@ -126,7 +130,7 @@ class DbService(
             """
         ) { resultSet ->
             val tableName = SqlTableName(
-                schema = SchemaName(resultSet.getString("table_schema")!!),
+                schema = dbName.toSchema(resultSet.getString("table_schema")!!),
                 name = resultSet.getString("table_name")!!,
             )
             tableName to Table.Column(
@@ -158,7 +162,7 @@ class DbService(
             """
         ) { resultSet ->
             val table = SqlTableName(
-                schema = SchemaName(resultSet.getString("table_schema")!!),
+                schema = dbName.toSchema(resultSet.getString("table_schema")!!),
                 name = resultSet.getString("table_name")!!,
             )
             table to PrimaryKeyColumn(
@@ -208,11 +212,11 @@ class DbService(
             val meta = ForeignKeyMetaData(
                 name = resultSet.getString("constraint_name")!!,
                 sourceTable = SqlTableName(
-                    schema = SchemaName(resultSet.getString("source_schema")!!),
+                    schema = dbName.toSchema(resultSet.getString("source_schema")!!),
                     name = resultSet.getString("source_table")!!,
                 ),
                 targetTable = SqlTableName(
-                    schema = SchemaName(resultSet.getString("target_schema")!!),
+                    schema = dbName.toSchema(resultSet.getString("target_schema")!!),
                     name = resultSet.getString("target_table")!!,
                 ),
             )
@@ -224,18 +228,11 @@ class DbService(
         }
             .groupBy({ it.first }, { it.second })
             .map { (meta, refs) ->
-                val key = if (refs.size == 1)
-                    Table.ForeignKey.SingleKey(
-                        name = meta.name,
-                        targetTable = meta.targetTable,
-                        reference = refs.single(),
-                    )
-                else
-                    Table.ForeignKey.MultiKey(
-                        name = meta.name,
-                        targetTable = meta.targetTable,
-                        references = refs.toSet(),
-                    )
+                val key = Table.ForeignKey(
+                    name = meta.name,
+                    targetTable = meta.targetTable,
+                    references = refs.distinct(),
+                )
                 meta.sourceTable to key
             }.groupBy({ it.first }, { it.second })
     }
@@ -262,7 +259,7 @@ class DbService(
             """
         ) { resultSet ->
             val name = SqlEnumName(
-                schema = SchemaName(resultSet.getString("enum_schema")!!),
+                schema = dbName.toSchema(resultSet.getString("enum_schema")!!),
                 name = resultSet.getString("enum_name"),
             )
             val field = EnumField(
