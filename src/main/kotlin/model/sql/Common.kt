@@ -41,7 +41,7 @@ sealed interface SqlObjectName : Comparable<SqlObjectName> {
 
     context(CodeGenContext)
     val packageName
-        get()= PackageName("$rootPackageName.${schema.dbName}.${schema.schemaName.makeDifferent(kotlinKeywords)}")
+        get()= PackageName("$rootPackageName.db.${schema.dbName}.${schema.schemaName.makeDifferent(kotlinKeywords)}")
 
     context(CodeGenContext)
     val typeName
