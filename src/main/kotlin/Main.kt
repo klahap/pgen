@@ -95,7 +95,7 @@ class Plugin : org.gradle.api.Plugin<Project> {
     override fun apply(project: Project) {
         val configBuilder = project.extensions.create("pgen", Config.Builder::class.java)
 
-        project.task("pgen generate") { task ->
+        project.task("pgenGenerate") { task ->
             task.group = TASK_GROUP
             task.doLast {
                 val config = configBuilder.build()
@@ -103,7 +103,7 @@ class Plugin : org.gradle.api.Plugin<Project> {
             }
         }
 
-        project.task("pgen generate spec") { task ->
+        project.task("pgenGenerateSpec") { task ->
             task.group = TASK_GROUP
             task.doLast {
                 val config = configBuilder.build()
@@ -111,7 +111,7 @@ class Plugin : org.gradle.api.Plugin<Project> {
             }
         }
 
-        project.task("pgen generate code") { task ->
+        project.task("pgenGenerateCode") { task ->
             task.group = TASK_GROUP
             task.doLast {
                 val config = configBuilder.build()
