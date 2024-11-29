@@ -16,6 +16,7 @@ fun Table.Column.Type.getTypeName(): TypeName {
         is Table.Column.Type.Enum -> name.typeName
         Table.Column.Type.Int8 -> Long::class.asTypeName()
         Table.Column.Type.Bool -> Boolean::class.asTypeName()
+        Table.Column.Type.Binary -> ByteArray::class.asTypeName()
         Table.Column.Type.VarChar -> String::class.asTypeName()
         Table.Column.Type.Date -> Poet.localDate
         Table.Column.Type.Interval -> Poet.duration
@@ -63,6 +64,7 @@ fun PropertySpec.Builder.initializer(column: Table.Column, postFix: String, vara
 
         Table.Column.Type.Int8 -> initializer("long(name = %S)$postFix", columnName, *postArgs)
         Table.Column.Type.Bool -> initializer("bool(name = %S)$postFix", columnName, *postArgs)
+        Table.Column.Type.Binary -> initializer("binary(name = %S)$postFix", columnName, *postArgs)
         Table.Column.Type.VarChar -> initializer("text(name = %S)$postFix", columnName, *postArgs)
         Table.Column.Type.Date -> initializer("%T(name = %S)$postFix", Poet.date, columnName, *postArgs)
         Table.Column.Type.Interval -> initializer("duration(name = %S)$postFix", columnName, *postArgs)

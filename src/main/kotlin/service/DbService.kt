@@ -70,6 +70,7 @@ class DbService(
         }
         return when (columnName) {
             "bool" -> Bool
+            "bytea" -> Binary
             "date" -> Date
             "int2" -> Int2
             "int4" -> Int4

@@ -55,6 +55,10 @@ data class Table(
             data object Bool : Type
 
             @Serializable
+            @SerialName("binary")
+            data object Binary : Type
+
+            @Serializable
             @SerialName("varchar")
             data object VarChar : Type
 
