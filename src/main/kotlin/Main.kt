@@ -32,8 +32,8 @@ private fun generateSpec(config: Config) {
         ).use { dbService ->
             val tables = dbService.getTablesWithForeignTables(configDb.tableFilter)
             val enumNames = tables.asSequence().flatMap { it.columns }.map { it.type }
-                .map { if (it is Table.Column.Type.Array) it.elementType else it }
-                .filterIsInstance<Table.Column.Type.Enum>().map { it.name }.toSet()
+                .map { if (it is Table.Column.Type.NonPrimitive.Array) it.elementType else it }
+                .filterIsInstance<Table.Column.Type.NonPrimitive.Enum>().map { it.name }.toSet()
             val enums = dbService.getEnums(enumNames)
             // TODO add/try view tables
             PgenSpec(tables = tables, enums = enums)

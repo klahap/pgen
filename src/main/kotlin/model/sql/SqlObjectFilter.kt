@@ -52,11 +52,11 @@ sealed interface SqlObjectFilter {
         private val dbName: DbName,
     ) {
         private val schemas: MutableSet<SchemaName> = mutableSetOf()
-        private val tables: MutableSet<SqlTableName> = mutableSetOf()
+        private val tables: MutableSet<SqlObjectName> = mutableSetOf()
 
         fun addSchema(name: String) = schemas.add(dbName.toSchema(name))
         fun addSchemas(vararg names: String) = schemas.addAll(names.map { dbName.toSchema(it) })
-        fun addTable(schema: String, table: String) = tables.add(SqlTableName(dbName.toSchema(schema), table))
+        fun addTable(schema: String, table: String) = tables.add(SqlObjectName(dbName.toSchema(schema), table))
         fun build(): SqlObjectFilter {
             val schemaFilter = Schemas(schemas).takeIf { it.isNotEmpty() }
             val tableFilter = Objects(tables).takeIf { it.isNotEmpty() }

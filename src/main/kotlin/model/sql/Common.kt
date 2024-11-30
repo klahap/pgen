@@ -3,14 +3,13 @@ package io.github.klahap.pgen.model.sql
 import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.dsl.PackageName
+import io.github.klahap.pgen.util.SqlObjectNameSerializer
 import io.github.klahap.pgen.util.kotlinKeywords
 import io.github.klahap.pgen.util.makeDifferent
 import io.github.klahap.pgen.util.toCamelCase
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @JvmInline
-@Serializable
 value class DbName(val name: String) : Comparable<DbName> {
     override fun compareTo(other: DbName) = name.compareTo(other.name)
     override fun toString() = name
@@ -19,7 +18,6 @@ value class DbName(val name: String) : Comparable<DbName> {
     val schemaPgCatalog get() = toSchema(schemaName = "pg_catalog")
 }
 
-@Serializable
 data class SchemaName(val dbName: DbName, val schemaName: String) : Comparable<SchemaName> {
     override fun toString(): String {
         return super.toString()
@@ -33,10 +31,12 @@ sealed interface SqlObject {
     val name: SqlObjectName
 }
 
-@Serializable
-sealed interface SqlObjectName : Comparable<SqlObjectName> {
-    val schema: SchemaName
-    val name: String
+@Serializable(with = SqlObjectNameSerializer::class)
+data class SqlObjectName(
+    val schema: SchemaName,
+    val name: String,
+) : Comparable<SqlObjectName> {
+
     val prettyName get() = name.toCamelCase(capitalized = true)
 
     context(CodeGenContext)
@@ -51,17 +51,3 @@ sealed interface SqlObjectName : Comparable<SqlObjectName> {
         schema.compareTo(other.schema).takeIf { it != 0 }
             ?: name.compareTo(other.name)
 }
-
-@Serializable
-@SerialName("table")
-data class SqlTableName(
-    override val schema: SchemaName,
-    override val name: String,
-) : SqlObjectName
-
-@Serializable
-@SerialName("enum")
-data class SqlEnumName(
-    override val schema: SchemaName,
-    override val name: String,
-) : SqlObjectName

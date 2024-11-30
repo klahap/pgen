@@ -22,7 +22,7 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
             name = column.prettyName,
             type = Poet.column.parameterizedBy(
                 when (column.type) {
-                    is Table.Column.Type.Array -> List::class.asTypeName()
+                    is Table.Column.Type.NonPrimitive.Array -> List::class.asTypeName()
                         .parameterizedBy(column.type.getTypeName())
 
                     else -> column.type.getTypeName()

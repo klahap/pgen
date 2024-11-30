@@ -6,7 +6,6 @@ import io.github.klahap.pgen.model.sql.*
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.Table.Column.Type
 import io.github.klahap.pgen.model.sql.Table.Column.Type.*
-import io.github.klahap.pgen.model.sql.Table.Column.Type.Array
 import java.io.Closeable
 import java.sql.DriverManager
 import java.sql.ResultSet
@@ -58,52 +57,52 @@ class DbService(
         val schema = dbName.toSchema(getString("column_type_schema")!!)
         val columnName = udtNameOverride ?: getString("column_type_name")!!
         val columnTypeCategory = columnTypeCategoryOverride ?: getString("column_type_category")!!
-        if (columnName.startsWith("_")) return Array(
+        if (columnName.startsWith("_")) return NonPrimitive.Array(
             getColumnType(
                 udtNameOverride = columnName.removePrefix("_"),
                 columnTypeCategoryOverride = getString("column_element_type_category")!!
             )
         )
         if (schema != dbName.schemaPgCatalog) return when (columnTypeCategory) {
-            "E" -> Type.Enum(SqlEnumName(schema = schema, name = columnName))
+            "E" -> Type.NonPrimitive.Enum(SqlObjectName(schema = schema, name = columnName))
             else -> error("Unknown column type '$columnTypeCategory' for column_type column type '$schema:$columnName'")
         }
         return when (columnName) {
-            "bool" -> Bool
-            "bytea" -> Binary
-            "date" -> Date
-            "int2" -> Int2
-            "int4" -> Int4
-            "int8" -> Int8
-            "int4range" -> Int4Range
-            "int8range" -> Int8Range
-            "int4multirange" -> Int4MultiRange
-            "int8multirange" -> Int8MultiRange
-            "interval" -> Interval
-            "json" -> Json
-            "jsonb" -> Jsonb
+            "bool" -> Primitive.BOOL
+            "bytea" -> Primitive.BINARY
+            "date" -> Primitive.DATE
+            "int2" -> Primitive.INT2
+            "int4" -> Primitive.INT4
+            "int8" -> Primitive.INT8
+            "int4range" -> Primitive.INT4RANGE
+            "int8range" -> Primitive.INT8RANGE
+            "int4multirange" -> Primitive.INT4MULTIRANGE
+            "int8multirange" -> Primitive.INT8MULTIRANGE
+            "interval" -> Primitive.INTERVAL
+            "json" -> Primitive.JSON
+            "jsonb" -> Primitive.JSONB
             "numeric" -> {
                 val precision = getInt("numeric_precision").takeIf { !wasNull() }
                 val scale = getInt("numeric_scale").takeIf { !wasNull() }
                 if (precision != null && scale != null)
-                    Numeric(precision = precision, scale = scale)
+                    NonPrimitive.Numeric(precision = precision, scale = scale)
                 else if (precision == null && scale == null)
-                    UnconstrainedNumeric
+                    Primitive.UNCONSTRAINED_NUMERIC
                 else
                     error("invalid numeric type, precision: $precision, scale: $scale")
             }
 
-            "text" -> Text
-            "time" -> Time
-            "timestamp" -> Timestamp
-            "timestamptz" -> TimestampWithTimeZone
-            "uuid" -> Uuid
-            "varchar" -> VarChar
+            "text" -> Primitive.TEXT
+            "time" -> Primitive.TIME
+            "timestamp" -> Primitive.TIMESTAMP
+            "timestamptz" -> Primitive.TIMESTAMP_WITH_TIMEZONE
+            "uuid" -> Primitive.UUID
+            "varchar" -> Primitive.VARCHAR
             else -> error("undefined udt_name '$columnName'")
         }
     }
 
-    private fun getColumns(filter: SqlObjectFilter): Map<SqlTableName, List<Table.Column>> {
+    private fun getColumns(filter: SqlObjectFilter): Map<SqlObjectName, List<Table.Column>> {
         if (filter.isEmpty()) return emptyMap()
         return connection.executeQuery(
             """
@@ -130,7 +129,7 @@ class DbService(
             WHERE ${filter.toFilterString(schemaField = "c.table_schema", tableField = "c.table_name")};
             """
         ) { resultSet ->
-            val tableName = SqlTableName(
+            val tableName = SqlObjectName(
                 schema = dbName.toSchema(resultSet.getString("table_schema")!!),
                 name = resultSet.getString("table_name")!!,
             )
@@ -142,7 +141,7 @@ class DbService(
         }.groupBy({ it.first }, { it.second })
     }
 
-    private fun getPrimaryKeys(filter: SqlObjectFilter): Map<SqlTableName, Table.PrimaryKey> {
+    private fun getPrimaryKeys(filter: SqlObjectFilter): Map<SqlObjectName, Table.PrimaryKey> {
         data class PrimaryKeyColumn(val keyName: String, val columnName: Table.ColumnName, val idx: Int)
 
         if (filter.isEmpty()) return emptyMap()
@@ -162,7 +161,7 @@ class DbService(
                     AND ${filter.toFilterString(schemaField = "tc.table_schema", tableField = "tc.table_name")};
             """
         ) { resultSet ->
-            val table = SqlTableName(
+            val table = SqlObjectName(
                 schema = dbName.toSchema(resultSet.getString("table_schema")!!),
                 name = resultSet.getString("table_name")!!,
             )
@@ -181,11 +180,11 @@ class DbService(
             }
     }
 
-    private fun getForeignKeys(filter: SqlObjectFilter): Map<SqlTableName, List<Table.ForeignKey>> {
+    private fun getForeignKeys(filter: SqlObjectFilter): Map<SqlObjectName, List<Table.ForeignKey>> {
         data class ForeignKeyMetaData(
             val name: String,
-            val sourceTable: SqlTableName,
-            val targetTable: SqlTableName,
+            val sourceTable: SqlObjectName,
+            val targetTable: SqlObjectName,
         )
 
         if (filter.isEmpty()) return emptyMap()
@@ -212,11 +211,11 @@ class DbService(
         ) { resultSet ->
             val meta = ForeignKeyMetaData(
                 name = resultSet.getString("constraint_name")!!,
-                sourceTable = SqlTableName(
+                sourceTable = SqlObjectName(
                     schema = dbName.toSchema(resultSet.getString("source_schema")!!),
                     name = resultSet.getString("source_table")!!,
                 ),
-                targetTable = SqlTableName(
+                targetTable = SqlObjectName(
                     schema = dbName.toSchema(resultSet.getString("target_schema")!!),
                     name = resultSet.getString("target_table")!!,
                 ),
@@ -238,7 +237,7 @@ class DbService(
             }.groupBy({ it.first }, { it.second })
     }
 
-    fun getEnums(enumNames: Set<SqlEnumName>): List<Enum> {
+    fun getEnums(enumNames: Set<SqlObjectName>): List<Enum> {
         data class EnumField(val order: UInt, val label: String)
 
         val filter = SqlObjectFilter.Objects(enumNames)
@@ -259,7 +258,7 @@ class DbService(
                     AND ${filter.toFilterString(schemaField = "na.nspname", tableField = "ty.typname")};
             """
         ) { resultSet ->
-            val name = SqlEnumName(
+            val name = SqlObjectName(
                 schema = dbName.toSchema(resultSet.getString("enum_schema")!!),
                 name = resultSet.getString("enum_name"),
             )
