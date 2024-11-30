@@ -22,6 +22,7 @@ data class SchemaName(val dbName: DbName, val schemaName: String) : Comparable<S
     override fun toString(): String {
         return super.toString()
     }
+
     override fun compareTo(other: SchemaName) =
         dbName.compareTo(other.dbName).takeIf { it != 0 }
             ?: schemaName.compareTo(other.schemaName)
@@ -41,7 +42,7 @@ data class SqlObjectName(
 
     context(CodeGenContext)
     val packageName
-        get()= PackageName("$rootPackageName.db.${schema.dbName}.${schema.schemaName.makeDifferent(kotlinKeywords)}")
+        get() = PackageName("$rootPackageName.db.${schema.dbName}.${schema.schemaName.makeDifferent(kotlinKeywords)}")
 
     context(CodeGenContext)
     val typeName

@@ -1,5 +1,8 @@
 package io.github.klahap.pgen
 
+import com.charleskorn.kaml.PolymorphismStyle
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import io.github.klahap.pgen.model.Config.Companion.buildConfig
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.model.Config
@@ -11,18 +14,19 @@ import io.github.klahap.pgen.util.DefaultCodeFile
 import io.github.klahap.pgen.service.EnvFileService
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.sync
-import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.gradle.api.Project
 import kotlin.io.path.*
 
 
-private val json = Json {
-    prettyPrint = true
-    @OptIn(ExperimentalSerializationApi::class)
-    prettyPrintIndent = "  "
-}
+private val yaml = Yaml(
+    serializersModule = Yaml.default.serializersModule,
+    configuration = YamlConfiguration(
+        encodeDefaults = false,
+        polymorphismStyle = PolymorphismStyle.Property,
+    )
+)
 
 private fun generateSpec(config: Config) {
     val specData = config.dbConfigs.map { configDb ->
@@ -43,13 +47,13 @@ private fun generateSpec(config: Config) {
         tables = specData.flatMap(PgenSpec::tables).sortedBy(Table::name),
         enums = specData.flatMap(PgenSpec::enums).sortedBy(Enum::name),
     )
-    config.specFilePath.createParentDirectories().writeText(json.encodeToString(spec))
+    config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
 
 private fun generateCode(config: Config) {
     if (config.specFilePath.notExists())
         error("Pgen spec file does not exist: '${config.specFilePath}'")
-    val spec = json.decodeFromString<PgenSpec>(config.specFilePath.readText())
+    val spec = yaml.decodeFromString<PgenSpec>(config.specFilePath.readText())
     CodeGenContext(
         rootPackageName = config.packageName,
         createDirectoriesForRootPackageName = config.createDirectoriesForRootPackageName,
@@ -83,7 +87,7 @@ fun main() {
         }
         packageName("io.github.klahap.pgen_test.db")
         outputPath("build/output/db")
-        specFilePath("build/output/pgen-spec.json")
+        specFilePath("build/output/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)
     }
     generate(config)
