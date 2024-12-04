@@ -20,7 +20,7 @@ internal fun Enum.toTypeSpecInternal() = buildEnum(this@toTypeSpecInternal.name.
             addSuperclassConstructorParameter("pgEnumLabel = %S", field)
         }
     }
-    val pgEnumTypeNameValue = "${this@toTypeSpecInternal.name.schema}.${this@toTypeSpecInternal.name.name}"
+    val pgEnumTypeNameValue = "${this@toTypeSpecInternal.name.schema.schemaName}.${this@toTypeSpecInternal.name.name}"
     addProperty(name = "pgEnumTypeName", type = String::class.asTypeName()) {
         initializer("%S", pgEnumTypeNameValue)
         addModifiers(KModifier.OVERRIDE)
