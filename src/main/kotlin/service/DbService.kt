@@ -115,6 +115,7 @@ class DbService(
                 c.udt_name AS column_type_name,
                 c.numeric_precision AS numeric_precision,
                 c.numeric_scale AS numeric_scale,
+                c.column_default AS column_default,
                 ty.typcategory AS column_type_category,
                 tye.typcategory AS column_element_type_category
             FROM information_schema.columns AS c
@@ -137,6 +138,7 @@ class DbService(
                 name = Table.ColumnName(resultSet.getString("column_name")!!),
                 type = resultSet.getColumnType(),
                 isNullable = resultSet.getBoolean("is_nullable"),
+                default = resultSet.getString("column_default")
             )
         }.groupBy({ it.first }, { it.second })
     }

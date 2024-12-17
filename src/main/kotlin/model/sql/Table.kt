@@ -26,6 +26,7 @@ data class Table(
         val name: ColumnName,
         val type: Type,
         val isNullable: Boolean = false,
+        val default: String? = null,
     ) {
         val prettyName get() = name.pretty
 

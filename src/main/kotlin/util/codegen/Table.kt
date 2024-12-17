@@ -30,7 +30,7 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
             ),
         ) {
             val postArgs = mutableListOf<Any>()
-            val postFix = buildString {
+            val postfix = buildString {
                 foreignKeysSingle[column.name]?.let { foreignKey ->
                     append(".references(%T.${foreignKey.second.pretty})")
                     postArgs.add(foreignKey.first.typeName)
@@ -38,7 +38,7 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
                 if (column.isNullable)
                     append(".nullable()")
             }
-            initializer(column, postFix = postFix, postArgs = postArgs.toTypedArray())
+            initializer(column, postfix = postfix, postArgs = postArgs)
         }
     }
     if (this@toTypeSpecInternal.primaryKey != null) {
