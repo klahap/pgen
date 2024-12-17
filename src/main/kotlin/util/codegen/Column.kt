@@ -39,6 +39,11 @@ fun Table.Column.Type.getTypeName(): TypeName {
 }
 
 private fun Table.Column.getDefaultExpression(): Pair<String, List<Any>>? = when (type) {
+    Table.Column.Type.Primitive.TIMESTAMP -> when (default) {
+        "now()" -> ".defaultExpression(%T)" to listOf(Poet.defaultExpTimestamp)
+        else -> null
+    }
+
     Table.Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> when (default) {
         "now()" -> ".defaultExpression(%T)" to listOf(Poet.defaultExpTimestampZ)
         else -> null

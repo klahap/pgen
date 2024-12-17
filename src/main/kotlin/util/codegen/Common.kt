@@ -31,6 +31,7 @@ object Poet {
     val localDate = ClassName("kotlinx.datetime", "LocalDate")
     val offsetDateTime = OffsetDateTime::class.asTypeName()
 
+    val defaultExpTimestamp = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "CurrentTimestamp")
     val defaultExpTimestampZ = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "CurrentTimestampWithTimeZone")
     val customFunction = ClassName("org.jetbrains.exposed.sql", "CustomFunction")
     val uuidColumnType = ClassName("org.jetbrains.exposed.sql", "UUIDColumnType")
