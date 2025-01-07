@@ -17,6 +17,7 @@ data class Config(
         val dbName: DbName,
         val connectionConfig: DbConnectionConfig?,
         val tableFilter: SqlObjectFilter,
+        val statementScripts: Set<Path>,
     ) {
         data class DbConnectionConfig(
             val url: String,
@@ -43,9 +44,16 @@ data class Config(
             private val dbName = DbName(name.also {
                 if (it.isBlank()) error("empty DB name")
             })
-
             private var connectionConfig: DbConnectionConfig? = null
             private var tableFilter: SqlObjectFilter? = null
+            private var statementScripts: Set<Path>? = null
+
+            class StatementCollectionBuilder {
+                private val scripts = linkedSetOf<Path>()
+                fun addScript(file: Path) = apply { scripts.add(file) }
+                fun addScript(file: String) = apply { scripts.add(Path(file)) }
+                fun build() = scripts.toSet()
+            }
 
             fun connectionConfig(ignoreErrors: Boolean = true, block: DbConnectionConfig.Builder.() -> Unit) = apply {
                 this.connectionConfig = runCatching {
@@ -61,10 +69,15 @@ data class Config(
                 tableFilter = SqlObjectFilter.Builder(dbName = dbName).apply(block).build()
             }
 
+            fun statements(block: StatementCollectionBuilder.() -> Unit) {
+                statementScripts = StatementCollectionBuilder().apply(block).build()
+            }
+
             fun build() = Db(
                 dbName = dbName,
                 connectionConfig = connectionConfig,
                 tableFilter = tableFilter ?: error("no table filter defined for DB config '$dbName'"),
+                statementScripts = statementScripts ?: emptySet(),
             )
         }
     }

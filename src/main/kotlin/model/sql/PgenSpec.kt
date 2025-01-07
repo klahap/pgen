@@ -7,4 +7,5 @@ import kotlinx.serialization.Serializable
 data class PgenSpec(
     val tables: List<Table>,
     val enums: List<Enum>,
+    val statements: List<Statement>,
 )

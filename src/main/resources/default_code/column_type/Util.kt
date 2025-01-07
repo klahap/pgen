@@ -3,6 +3,37 @@ package default_code.column_type
 import default_code.column_type.RawRange.Empty
 import default_code.column_type.RawRange.Normal
 import default_code.column_type.RawRangeBorder.Infinity
+import org.jetbrains.exposed.sql.ColumnType
+import org.jetbrains.exposed.sql.ArrayColumnType
+import org.postgresql.util.PGobject
+import kotlin.enums.enumEntries
+
+fun <E> getArrayColumnType(columnType: ColumnType<E & Any>) =
+    ArrayColumnType<E, List<E>>(delegate = columnType)
+
+interface PgEnum {
+    val pgEnumTypeName: String
+    val pgEnumLabel: String
+
+    fun toPgObject() = PGobject().apply {
+        value = pgEnumLabel
+        type = pgEnumTypeName
+    }
+}
+
+inline fun <reified T> getPgEnumByLabel(label: String): T
+        where T : Enum<T>,
+              T : PgEnum {
+    return enumEntries<T>().singleOrNull { e -> e.pgEnumLabel == label }
+        ?: error("enum with label '$label' not found in '${T::class.qualifiedName}'")
+}
+
+internal fun List<RawRange>.toInt4MultiRange(): MultiRange<Int> = MultiRange(map { it.toInt4Range() }.toSet())
+internal fun List<RawRange>.toInt8MultiRange(): MultiRange<Long> = MultiRange(map { it.toInt8Range() }.toSet())
+internal fun String.parseMultiRange(): List<RawRange> = trimStart('{').trimEnd('}')
+    .split(',').chunked(2)
+    .map { borders -> borders.joinToString(",") }
+    .map { it.parseRange() }
 
 
 internal sealed interface RawRange {

@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.util.SqlObjectNameSerializer
+import io.github.klahap.pgen.util.SqlStatementNameSerializer
 import io.github.klahap.pgen.util.kotlinKeywords
 import io.github.klahap.pgen.util.makeDifferent
 import io.github.klahap.pgen.util.toCamelCase
@@ -30,6 +31,28 @@ data class SchemaName(val dbName: DbName, val schemaName: String) : Comparable<S
 
 sealed interface SqlObject {
     val name: SqlObjectName
+}
+
+@Serializable(with = SqlStatementNameSerializer::class)
+data class SqlStatementName(
+    val dbName: DbName,
+    val name: String,
+) : Comparable<SqlStatementName> {
+
+    val prettyName get() = name.toCamelCase(capitalized = false)
+    val prettyResultClassName get() = name.toCamelCase(capitalized = true) + "Result"
+
+    context(CodeGenContext)
+    val packageName
+        get() = PackageName("$rootPackageName.db.${dbName}")
+
+    context(CodeGenContext)
+    val typeName
+        get() = ClassName(packageName.name, prettyName)
+
+    override fun compareTo(other: SqlStatementName): Int =
+        dbName.compareTo(other.dbName).takeIf { it != 0 }
+            ?: name.compareTo(other.name)
 }
 
 @Serializable(with = SqlObjectNameSerializer::class)

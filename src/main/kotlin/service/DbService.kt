@@ -1,11 +1,13 @@
 package io.github.klahap.pgen.service
 
+import io.github.klahap.pgen.dsl.execute
 import io.github.klahap.pgen.dsl.executeQuery
 import io.github.klahap.pgen.model.*
 import io.github.klahap.pgen.model.sql.*
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.Table.Column.Type
 import io.github.klahap.pgen.model.sql.Table.Column.Type.*
+import org.postgresql.util.PGobject
 import java.io.Closeable
 import java.sql.DriverManager
 import java.sql.ResultSet
@@ -15,10 +17,55 @@ class DbService(
     connectionConfig: Config.Db.DbConnectionConfig
 ) : Closeable {
     private val connection = DriverManager.getConnection(
-        "${connectionConfig.url}?prepareThreshold=0",
+        connectionConfig.url,
         connectionConfig.user,
         connectionConfig.password
     )
+
+    fun getStatements(rawStatements: List<Statement.Raw>): List<Statement> {
+        if (rawStatements.isEmpty()) return emptyList()
+        fun Statement.Raw.preparedStmt() = "prepare_stmt_${name.lowercase()}"
+        fun Statement.Raw.tempTable() = "prepare_stmt_${name.lowercase()}"
+
+        val statements = rawStatements.map { raw ->
+            val inputTypes = runCatching {
+                connection.execute("PREPARE ${raw.preparedStmt()} AS\n${raw.preparedPsql};")
+                connection.executeQuery(
+                    """
+                SELECT parameter_types as types
+                FROM pg_prepared_statements
+                WHERE name = '${raw.preparedStmt()}';
+                """.trimIndent()
+                ) { rs -> (rs.getArray("types").array as Array<*>).map { (it as? PGobject)?.value!! } }
+                    .single().map { getPrimitiveType(it) }
+            }.getOrElse { throw Exception("Failed to extract input types of statement '${raw.name}': ${it.message}") }
+
+            if (inputTypes.size != raw.uniqueSortedVariables.size)
+                throw Exception("unexpected number of input columns in statement '${raw.name}'")
+
+            val columns = runCatching {
+                connection.execute("CREATE TEMP TABLE ${raw.tempTable()} AS\n${raw.sql};")
+                getColumns(SqlObjectFilter.TempTable(setOf(raw.tempTable()))).values.single()
+            }.getOrElse { throw Exception("Failed to extract output types of statement '${raw.name}': ${it.message}") }
+
+            Statement(
+                name = SqlStatementName(dbName = dbName, name = raw.name),
+                cardinality = raw.cardinality,
+                variables = raw.allVariables,
+                variableTypes = raw.uniqueSortedVariables.zip(inputTypes).toMap(),
+                columns = columns.map { c ->
+                    if (c.name.value in raw.nonNullColumns) c.copy(isNullable = false) else c
+                },
+                sql = raw.preparedSql,
+            )
+        }
+
+        val duplicateStatementNames = statements.groupingBy { it.name.prettyName }
+            .eachCount().filter { it.value > 1 }.keys
+        if (duplicateStatementNames.isNotEmpty())
+            error("statements with duplicate names found: $duplicateStatementNames")
+        return statements
+    }
 
     fun getTablesWithForeignTables(filter: SqlObjectFilter): List<Table> {
         return buildList {
@@ -64,23 +111,10 @@ class DbService(
             )
         )
         if (schema != dbName.schemaPgCatalog) return when (columnTypeCategory) {
-            "E" -> Type.NonPrimitive.Enum(SqlObjectName(schema = schema, name = columnName))
+            "E" -> NonPrimitive.Enum(SqlObjectName(schema = schema, name = columnName))
             else -> error("Unknown column type '$columnTypeCategory' for column_type column type '$schema:$columnName'")
         }
         return when (columnName) {
-            "bool" -> Primitive.BOOL
-            "bytea" -> Primitive.BINARY
-            "date" -> Primitive.DATE
-            "int2" -> Primitive.INT2
-            "int4" -> Primitive.INT4
-            "int8" -> Primitive.INT8
-            "int4range" -> Primitive.INT4RANGE
-            "int8range" -> Primitive.INT8RANGE
-            "int4multirange" -> Primitive.INT4MULTIRANGE
-            "int8multirange" -> Primitive.INT8MULTIRANGE
-            "interval" -> Primitive.INTERVAL
-            "json" -> Primitive.JSON
-            "jsonb" -> Primitive.JSONB
             "numeric" -> {
                 val precision = getInt("numeric_precision").takeIf { !wasNull() }
                 val scale = getInt("numeric_scale").takeIf { !wasNull() }
@@ -92,14 +126,31 @@ class DbService(
                     error("invalid numeric type, precision: $precision, scale: $scale")
             }
 
-            "text" -> Primitive.TEXT
-            "time" -> Primitive.TIME
-            "timestamp" -> Primitive.TIMESTAMP
-            "timestamptz" -> Primitive.TIMESTAMP_WITH_TIMEZONE
-            "uuid" -> Primitive.UUID
-            "varchar" -> Primitive.VARCHAR
-            else -> error("undefined udt_name '$columnName'")
+            else -> getPrimitiveType(columnName)
         }
+    }
+
+    private fun getPrimitiveType(name: String) = when (name) {
+        "bool" -> Primitive.BOOL
+        "bytea" -> Primitive.BINARY
+        "date" -> Primitive.DATE
+        "int2" -> Primitive.INT2
+        "int4" -> Primitive.INT4
+        "int8" -> Primitive.INT8
+        "int4range" -> Primitive.INT4RANGE
+        "int8range" -> Primitive.INT8RANGE
+        "int4multirange" -> Primitive.INT4MULTIRANGE
+        "int8multirange" -> Primitive.INT8MULTIRANGE
+        "interval" -> Primitive.INTERVAL
+        "json" -> Primitive.JSON
+        "jsonb" -> Primitive.JSONB
+        "text" -> Primitive.TEXT
+        "time" -> Primitive.TIME
+        "timestamp" -> Primitive.TIMESTAMP
+        "timestamptz" -> Primitive.TIMESTAMP_WITH_TIMEZONE
+        "uuid" -> Primitive.UUID
+        "varchar" -> Primitive.VARCHAR
+        else -> error("undefined primitive type name '$name'")
     }
 
     private fun getColumns(filter: SqlObjectFilter): Map<SqlObjectName, List<Table.Column>> {

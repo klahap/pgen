@@ -17,15 +17,14 @@ data class DefaultCodeFile(
 
     companion object {
         fun all() = setOf(
+            DefaultCodeFile("column_type", "DefaultJsonColumnType.kt"),
             DefaultCodeFile("column_type", "IntMultiRange.kt"),
             DefaultCodeFile("column_type", "IntRange.kt"),
             DefaultCodeFile("column_type", "MultiRange.kt"),
             DefaultCodeFile("column_type", "MultiRangeColumnType.kt"),
             DefaultCodeFile("column_type", "RangeColumnType.kt"),
             DefaultCodeFile("column_type", "UnconstrainedNumericColumnType.kt"),
-            DefaultCodeFile("column_type", "UtilMultiRange.kt"),
-            DefaultCodeFile("column_type", "UtilRange.kt"),
-            DefaultCodeFile("column_type", "UtilEnum.kt"),
+            DefaultCodeFile("column_type", "Util.kt"),
             DefaultCodeFile("util", "BatchUpdateStatementDsl.kt"),
         )
     }

@@ -3,10 +3,10 @@ package io.github.klahap.pgen.util
 import com.charleskorn.kaml.YamlInput
 import com.charleskorn.kaml.YamlMap
 import com.charleskorn.kaml.YamlScalar
-import com.charleskorn.kaml.YamlTaggedNode
 import io.github.klahap.pgen.model.sql.DbName
 import io.github.klahap.pgen.model.sql.SchemaName
 import io.github.klahap.pgen.model.sql.SqlObjectName
+import io.github.klahap.pgen.model.sql.SqlStatementName
 import io.github.klahap.pgen.model.sql.Table
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -75,9 +75,32 @@ object SqlObjectNameSerializer : KSerializer<SqlObjectName> {
         return SqlObjectName(
             schema = SchemaName(
                 dbName = DbName(db),
-                schemaName = schema
+                schemaName = schema,
             ),
-            name = name
+            name = name,
+        )
+    }
+}
+
+
+object SqlStatementNameSerializer : KSerializer<SqlStatementName> {
+    @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
+    override val descriptor: SerialDescriptor = buildSerialDescriptor(
+        SqlStatementNameSerializer::class.java.name,
+        SerialKind.CONTEXTUAL
+    ) {
+        element<String>("string")
+    }
+
+    override fun serialize(encoder: Encoder, value: SqlStatementName) {
+        encoder.encodeString("${value.dbName}.${value.name}")
+    }
+
+    override fun deserialize(decoder: Decoder): SqlStatementName {
+        val (db, name) = decoder.decodeString().split('.')
+        return SqlStatementName(
+            dbName = DbName(db),
+            name = name,
         )
     }
 }

@@ -26,6 +26,21 @@ fun buildEnum(
     block: TypeSpec.Builder.() -> Unit,
 ) = TypeSpec.enumBuilder(name).apply(block).build()
 
+fun buildClass(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = TypeSpec.classBuilder(name).apply(block).build()
+
+fun TypeSpec.Builder.addClass(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = addType(buildClass(name = name, block = block))
+
+fun FileSpec.Builder.addClass(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = addType(buildClass(name = name, block = block))
+
 fun TypeSpec.Builder.addProperty(name: String, type: TypeName, block: PropertySpec.Builder.() -> Unit) =
     addProperty(PropertySpec.builder(name = name, type = type).apply(block).build())
 
@@ -42,10 +57,42 @@ fun TypeSpec.Builder.addCompanionObject(
     block: TypeSpec.Builder.() -> Unit,
 ) = addType(TypeSpec.companionObjectBuilder().apply(block).build())
 
+fun buildFunction(
+    name: String,
+    block: FunSpec.Builder.() -> Unit,
+) = FunSpec.builder(name).apply(block).build()
+
 fun TypeSpec.Builder.addFunction(
     name: String,
     block: FunSpec.Builder.() -> Unit,
-) = addFunction(FunSpec.builder(name).apply(block).build())
+) = addFunction(buildFunction(name = name, block = block))
+
+fun FileSpec.Builder.addFunction(
+    name: String,
+    block: FunSpec.Builder.() -> Unit,
+) = addFunction(buildFunction(name = name, block = block))
 
 fun TypeSpec.Builder.addInitializerBlock(block: CodeBlock.Builder.() -> Unit) =
     addInitializerBlock(CodeBlock.builder().apply(block).build())
+
+fun FunSpec.Builder.addParameter(
+    name: String,
+    type: TypeName,
+    block: ParameterSpec.Builder.() -> Unit,
+) = addParameter(ParameterSpec.builder(name, type).apply(block).build())
+
+fun FunSpec.Builder.addCode(
+    block: CodeBlock.Builder.() -> Unit
+) = addCode(CodeBlock.builder().apply(block).build())
+
+fun CodeBlock.Builder.addControlFlow(controlFlow: String, vararg args: Any, block: CodeBlock.Builder.() -> Unit) {
+    beginControlFlow(controlFlow, *args)
+    block()
+    endControlFlow()
+}
+
+fun CodeBlock.Builder.indent(block: CodeBlock.Builder.() -> Unit) {
+    indent()
+    block()
+    unindent()
+}

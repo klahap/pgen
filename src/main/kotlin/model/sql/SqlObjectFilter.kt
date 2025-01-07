@@ -26,6 +26,16 @@ sealed interface SqlObjectFilter {
         override fun exactSizeOrNull(): Int = objectNames.size
     }
 
+    data class TempTable(val names: Set<String>) : SqlObjectFilter {
+        override fun toFilterString(schemaField: String, tableField: String): String {
+            val schemasStr = names.toSet().joinToString(",") { "'$it'" }
+            return "$tableField IN ($schemasStr)"
+        }
+
+        override fun isEmpty(): Boolean = names.isEmpty()
+        override fun exactSizeOrNull(): Int = names.size
+    }
+
     data class Multi(
         val filters: List<SqlObjectFilter>,
     ) : SqlObjectFilter {

@@ -8,12 +8,14 @@ import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.model.Config
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.PgenSpec
+import io.github.klahap.pgen.model.sql.Statement
 import io.github.klahap.pgen.service.DbService
 import io.github.klahap.pgen.service.DirectorySyncService.Companion.directorySync
 import io.github.klahap.pgen.util.DefaultCodeFile
 import io.github.klahap.pgen.service.EnvFileService
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.sync
+import io.github.klahap.pgen.util.parseStatements
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.gradle.api.Project
@@ -34,17 +36,19 @@ private fun generateSpec(config: Config) {
             dbName = configDb.dbName,
             connectionConfig = configDb.connectionConfig ?: error("no DB connection config defined")
         ).use { dbService ->
+            val statements = dbService.getStatements(parseStatements(configDb.statementScripts))
             val tables = dbService.getTablesWithForeignTables(configDb.tableFilter)
             val enumNames = tables.asSequence().flatMap { it.columns }.map { it.type }
                 .map { if (it is Table.Column.Type.NonPrimitive.Array) it.elementType else it }
                 .filterIsInstance<Table.Column.Type.NonPrimitive.Enum>().map { it.name }.toSet()
             val enums = dbService.getEnums(enumNames)
-            PgenSpec(tables = tables, enums = enums)
+            PgenSpec(tables = tables, enums = enums, statements = statements)
         }
     }
     val spec = PgenSpec(
         tables = specData.flatMap(PgenSpec::tables).sortedBy(Table::name),
         enums = specData.flatMap(PgenSpec::enums).sortedBy(Enum::name),
+        statements = specData.flatMap(PgenSpec::statements).sortedBy(Statement::name),
     )
     config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
@@ -61,6 +65,7 @@ private fun generateCode(config: Config) {
             DefaultCodeFile.all().forEach { sync(it) }
             spec.enums.forEach { sync(it) }
             spec.tables.forEach { sync(it) }
+            spec.statements.groupBy { it.name.dbName }.values.forEach { sync(it) }
             cleanup()
         }
     }

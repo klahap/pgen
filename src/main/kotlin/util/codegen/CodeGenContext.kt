@@ -9,8 +9,12 @@ data class CodeGenContext(
 ) {
     private val packageCustomColumn = PackageName("$rootPackageName.column_type")
 
+    val getArrayColumnType
+        get() = ClassName(packageCustomColumn.name, "getArrayColumnType")
     val typeNameMultiRange
         get() = ClassName(packageCustomColumn.name, "MultiRange")
+    val defaultJsonColumnType
+        get() = ClassName(packageCustomColumn.name, "DefaultJsonColumnType")
     val typeNameInt4RangeColumnType
         get() = ClassName(packageCustomColumn.name, "Int4RangeColumnType")
     val typeNameInt8RangeColumnType

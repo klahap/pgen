@@ -1,42 +1,8 @@
 package io.github.klahap.pgen.util.codegen
 
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.model.sql.Table
-import java.math.BigDecimal
-import java.util.*
 
-
-context(CodeGenContext)
-fun Table.Column.Type.getTypeName(): TypeName {
-    return when (this) {
-        is Table.Column.Type.NonPrimitive.Array -> elementType.getTypeName()
-        is Table.Column.Type.NonPrimitive.Enum -> name.typeName
-        is Table.Column.Type.NonPrimitive.Numeric -> BigDecimal::class.asTypeName()
-        Table.Column.Type.Primitive.INT8 -> Long::class.asTypeName()
-        Table.Column.Type.Primitive.BOOL -> Boolean::class.asTypeName()
-        Table.Column.Type.Primitive.BINARY -> ByteArray::class.asTypeName()
-        Table.Column.Type.Primitive.VARCHAR -> String::class.asTypeName()
-        Table.Column.Type.Primitive.DATE -> Poet.localDate
-        Table.Column.Type.Primitive.INTERVAL -> Poet.duration
-        Table.Column.Type.Primitive.INT4RANGE -> IntRange::class.asTypeName()
-        Table.Column.Type.Primitive.INT8RANGE -> LongRange::class.asTypeName()
-        Table.Column.Type.Primitive.INT4MULTIRANGE -> typeNameMultiRange.parameterizedBy(Int::class.asTypeName())
-        Table.Column.Type.Primitive.INT8MULTIRANGE -> typeNameMultiRange.parameterizedBy(Long::class.asTypeName())
-        Table.Column.Type.Primitive.INT4 -> Int::class.asTypeName()
-        Table.Column.Type.Primitive.JSON -> Poet.jsonElement
-        Table.Column.Type.Primitive.JSONB -> Poet.jsonElement
-        Table.Column.Type.Primitive.INT2 -> Short::class.asTypeName()
-        Table.Column.Type.Primitive.TEXT -> String::class.asTypeName()
-        Table.Column.Type.Primitive.TIME -> Poet.localTime
-        Table.Column.Type.Primitive.TIMESTAMP -> Poet.instant
-        Table.Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> Poet.offsetDateTime
-        Table.Column.Type.Primitive.UUID -> UUID::class.asTypeName()
-        Table.Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> BigDecimal::class.asTypeName()
-    }
-}
 
 private fun Table.Column.getDefaultExpression(): Pair<String, List<Any>>? = when (type) {
     Table.Column.Type.Primitive.TIMESTAMP -> when (default) {
