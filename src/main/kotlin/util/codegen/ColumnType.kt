@@ -16,6 +16,7 @@ fun Table.Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = wh
         elementType.getTypeName()
     else
         List::class.asTypeName().parameterizedBy(elementType.getTypeName())
+
     is Table.Column.Type.NonPrimitive.Enum -> name.typeName
     is Table.Column.Type.NonPrimitive.Numeric -> BigDecimal::class.asTypeName()
     Table.Column.Type.Primitive.INT8 -> Long::class.asTypeName()
@@ -45,7 +46,7 @@ private fun codeBlock(format: String, vararg args: Any) = CodeBlock.builder().ad
 context(CodeGenContext)
 fun Table.Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     is Table.Column.Type.NonPrimitive.Array ->
-        codeBlock("$getArrayColumnType(${elementType.getExposedColumnType()})")
+        codeBlock("%T(%L)", getArrayColumnType, elementType.getExposedColumnType())
 
     is Table.Column.Type.NonPrimitive.Enum ->
         codeBlock("%T(%T::class)", ClassName("org.jetbrains.exposed.sql", "EnumerationColumnType"), name.typeName)
