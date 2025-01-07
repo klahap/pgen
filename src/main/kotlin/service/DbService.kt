@@ -24,13 +24,13 @@ class DbService(
 
     fun getStatements(rawStatements: List<Statement.Raw>): List<Statement> {
         if (rawStatements.isEmpty()) return emptyList()
-        fun Statement.Raw.preparedStmt() = "prepare_stmt_${name.lowercase()}"
-        fun Statement.Raw.tempTable() = "prepare_stmt_${name.lowercase()}"
+        fun Statement.Raw.preparedStmt() = "pgen_prepare_stmt_${name.lowercase()}"
+        fun Statement.Raw.tempTable() = "pgen_temp_table_${name.lowercase()}"
 
         val statements = rawStatements.map { raw ->
             val inputTypes = runCatching {
                 connection.execute("PREPARE ${raw.preparedStmt()} AS\n${raw.preparedPsql};")
-                connection.executeQuery(
+                val result = connection.executeQuery(
                     """
                     SELECT parameter_types as types
                     FROM pg_prepared_statements
@@ -38,6 +38,8 @@ class DbService(
                     """.trimIndent()
                 ) { rs -> (rs.getArray("types").array as Array<*>).map { (it as? PGobject)?.value!! } }
                     .single().map { getPrimitiveType(it) }
+                connection.execute("DEALLOCATE ${raw.preparedStmt()};")
+                result
             }.getOrElse { throw Exception("Failed to extract input types of statement '${raw.name}': ${it.message}") }
 
             if (inputTypes.size != raw.uniqueSortedVariables.size)
@@ -45,7 +47,9 @@ class DbService(
 
             val columns = runCatching {
                 connection.execute("CREATE TEMP TABLE ${raw.tempTable()} AS\n${raw.sql};")
-                getColumns(SqlObjectFilter.TempTable(setOf(raw.tempTable()))).values.single()
+                val result = getColumns(SqlObjectFilter.TempTable(setOf(raw.tempTable()))).values.single()
+                connection.execute("DROP TABLE ${raw.tempTable()};")
+                result
             }.getOrElse { throw Exception("Failed to extract output types of statement '${raw.name}': ${it.message}") }
 
             Statement(
