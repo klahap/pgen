@@ -11,8 +11,11 @@ import java.util.UUID
 
 
 context(CodeGenContext)
-fun Table.Column.Type.getTypeName(): TypeName = when (this) {
-    is Table.Column.Type.NonPrimitive.Array -> elementType.getTypeName()
+fun Table.Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (this) {
+    is Table.Column.Type.NonPrimitive.Array -> if (innerArrayType)
+        elementType.getTypeName()
+    else
+        List::class.asTypeName().parameterizedBy(elementType.getTypeName())
     is Table.Column.Type.NonPrimitive.Enum -> name.typeName
     is Table.Column.Type.NonPrimitive.Numeric -> BigDecimal::class.asTypeName()
     Table.Column.Type.Primitive.INT8 -> Long::class.asTypeName()

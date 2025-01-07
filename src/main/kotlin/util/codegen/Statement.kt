@@ -29,7 +29,7 @@ internal fun FileSpec.Builder.addStatements(statements: Collection<Statement>) {
             primaryConstructor {
                 statement.columns.forEachIndexed { idx, column ->
                     val name = column.name.pretty
-                    val type = column.type.getTypeName().copy(nullable = column.isNullable)
+                    val type = column.type.getTypeName(innerArrayType = false).copy(nullable = column.isNullable)
                     addParameter(name, type)
                     addProperty(name = name, type = type) { initializer(name) }
                 }
@@ -72,13 +72,13 @@ internal fun FileSpec.Builder.addStatements(statements: Collection<Statement>) {
                                 add("%T(\n", resultTypeName)
                                 indent {
                                     statement.columns.forEachIndexed { idx, column ->
-                                        "rowSet.getObject(1)!!.let { LongColumnType().valueFromDB(it) }"
                                         add(
-                                            "%L = %L.getObject(%L)%L.let { %L.valueFromDB(it) },\n",
+                                            "%L = %L.getObject(%L)%L.let { %L.valueFromDB(it) }%L,\n",
                                             column.name.pretty,
                                             rowSetName, idx + 1,
                                             if (column.isNullable) "?" else "!!",
                                             column.type.getExposedColumnType(),
+                                            if (column.isNullable) "" else "!!",
                                         )
                                     }
                                 }

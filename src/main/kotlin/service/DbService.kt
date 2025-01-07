@@ -19,7 +19,7 @@ class DbService(
     private val connection = DriverManager.getConnection(
         connectionConfig.url,
         connectionConfig.user,
-        connectionConfig.password
+        connectionConfig.password,
     )
 
     fun getStatements(rawStatements: List<Statement.Raw>): List<Statement> {
@@ -32,10 +32,10 @@ class DbService(
                 connection.execute("PREPARE ${raw.preparedStmt()} AS\n${raw.preparedPsql};")
                 connection.executeQuery(
                     """
-                SELECT parameter_types as types
-                FROM pg_prepared_statements
-                WHERE name = '${raw.preparedStmt()}';
-                """.trimIndent()
+                    SELECT parameter_types as types
+                    FROM pg_prepared_statements
+                    WHERE name = '${raw.preparedStmt()}';
+                    """.trimIndent()
                 ) { rs -> (rs.getArray("types").array as Array<*>).map { (it as? PGobject)?.value!! } }
                     .single().map { getPrimitiveType(it) }
             }.getOrElse { throw Exception("Failed to extract input types of statement '${raw.name}': ${it.message}") }
