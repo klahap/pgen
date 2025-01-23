@@ -1,6 +1,7 @@
 package io.github.klahap.pgen.model.sql
 
 import io.github.klahap.pgen.util.ColumnTypeSerializer
+import io.github.klahap.pgen.util.makeDifferent
 import io.github.klahap.pgen.util.toCamelCase
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -18,7 +19,31 @@ data class Table(
     @Serializable
     value class ColumnName(val value: String) {
         override fun toString() = value
-        val pretty get() = value.toCamelCase(capitalized = false)
+        val pretty get() = value.toCamelCase(capitalized = false).makeDifferent(reservedColumnNames)
+
+        companion object {
+            private val reservedColumnNames = setOf(
+                "tableName",
+                "schemaName",
+                "tableNameWithoutScheme",
+                "tableNameWithoutSchemeSanitized",
+                "_columns",
+                "columns",
+                "autoIncColumn",
+                "_indices",
+                "indices",
+                "_foreignKeys",
+                "foreignKeys",
+                "sequences",
+                "checkConstraints",
+                "generatedUnsignedCheckPrefix",
+                "generatedSignedCheckPrefix",
+                "primaryKey",
+                "ddl",
+                "source",
+                "fields",
+            )
+        }
     }
 
     @Serializable
