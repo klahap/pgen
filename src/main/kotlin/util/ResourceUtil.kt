@@ -1,31 +1,31 @@
 package io.github.klahap.pgen.util
 
 import io.github.klahap.pgen.util.codegen.CodeGenContext
+import java.io.File
 
 data class DefaultCodeFile(
-    val relativePackageName: String,
+    private val relativePackageNames: List<String>,
     val fileName: String,
 ) {
+    val relativePath get() = (relativePackageNames + listOf(fileName)).joinToString("/")
+
     context(CodeGenContext)
-    fun getContent(): String {
-        val relativePath = relativePackageName.replace(".", "/") + "/" + fileName
-        return this::class.java.getResourceAsStream("/default_code/$relativePath")!!
-            .readAllBytes().decodeToString()
-            .replaceFirst("package default_code", "package $rootPackageName")
-            .replace("import default_code", "import $rootPackageName")
-    }
+    fun getContent(): String = javaClass.getResourceAsStream("/default_code/$relativePath")!!
+        .readAllBytes().decodeToString()
+        .replaceFirst("package default_code", "package $rootPackageName")
+        .replace("import default_code", "import $rootPackageName")
 
     companion object {
-        fun all() = setOf(
-            DefaultCodeFile("column_type", "DefaultJsonColumnType.kt"),
-            DefaultCodeFile("column_type", "IntMultiRange.kt"),
-            DefaultCodeFile("column_type", "IntRange.kt"),
-            DefaultCodeFile("column_type", "MultiRange.kt"),
-            DefaultCodeFile("column_type", "MultiRangeColumnType.kt"),
-            DefaultCodeFile("column_type", "RangeColumnType.kt"),
-            DefaultCodeFile("column_type", "UnconstrainedNumericColumnType.kt"),
-            DefaultCodeFile("column_type", "Util.kt"),
-            DefaultCodeFile("util", "BatchUpdateStatementDsl.kt"),
-        )
+        private fun getResources(path: List<String>): Sequence<List<String>> {
+            val pathStr = path.joinToString("/")
+            val resource = javaClass.classLoader.getResource(pathStr) ?: error("Resource not found: $pathStr")
+            val childs = File(resource.toURI()).list()?.toList() ?: return sequenceOf(path)
+            return childs.asSequence().flatMap { child ->
+                getResources(path + listOf(child))
+            }
+        }
+
+        fun all() = getResources(listOf("default_code"))
+            .map { DefaultCodeFile(it.drop(1).dropLast(1), it.last()) }.toSet()
     }
 }

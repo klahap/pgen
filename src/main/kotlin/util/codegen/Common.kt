@@ -96,9 +96,8 @@ fun DirectorySyncService.sync(
 
 context(CodeGenContext)
 fun DirectorySyncService.sync(codeFile: DefaultCodeFile) {
-    val packageName = rootPackageName + codeFile.relativePackageName
     sync(
-        relativePath = packageName.toRelativePath() + "/" + codeFile.fileName,
+        relativePath = codeFile.relativePath,
         content = codeFile.getContent()
     )
 }

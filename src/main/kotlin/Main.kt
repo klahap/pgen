@@ -88,10 +88,13 @@ fun main() {
             tableFilter {
                 addSchemas("public")
             }
+            statements {
+                addScript("./test-queries.sql")
+            }
         }
         packageName("io.github.klahap.pgen_test.db")
-        outputPath("build/output/db")
-        specFilePath("build/output/pgen-spec.yaml")
+        outputPath("/Users/klaus/repos/pgen-test/src/main/kotlin/db")
+        specFilePath("/Users/klaus/repos/pgen-test/src/main/resources/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)
     }
     generate(config)
