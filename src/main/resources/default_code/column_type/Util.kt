@@ -4,7 +4,10 @@ import default_code.column_type.RawRange.Empty
 import default_code.column_type.RawRange.Normal
 import default_code.column_type.RawRangeBorder.Infinity
 import org.jetbrains.exposed.sql.ColumnType
+import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ArrayColumnType
+import org.jetbrains.exposed.sql.CustomEnumerationColumnType
+import org.jetbrains.exposed.sql.Table
 import org.postgresql.util.PGobject
 import kotlin.enums.enumEntries
 
@@ -26,6 +29,21 @@ inline fun <reified T> getPgEnumByLabel(label: String): T
               T : PgEnum {
     return enumEntries<T>().singleOrNull { e -> e.pgEnumLabel == label }
         ?: error("enum with label '$label' not found in '${T::class.qualifiedName}'")
+}
+
+fun <T : Enum<T>> Table.customEnumerationArray(
+    name: String,
+    sql: String?,
+    fromDb: (Any) -> T,
+    toDb: (T) -> Any
+): Column<List<T>> {
+    val enumColumnType = CustomEnumerationColumnType(
+        name = "${name}_element",
+        sql = sql,
+        fromDb = fromDb,
+        toDb = toDb,
+    )
+    return array(name = name, columnType = enumColumnType)
 }
 
 internal fun List<RawRange>.toInt4MultiRange(): MultiRange<Int> = MultiRange(map { it.toInt4Range() }.toSet())

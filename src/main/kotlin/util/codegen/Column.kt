@@ -42,10 +42,31 @@ fun PropertySpec.Builder.initializer(column: Table.Column, postfix: String, post
     }
 
     when (val type = column.type) {
-        is Table.Column.Type.NonPrimitive.Array -> initializer(
-            "array<%T>(name = %S)$postfix",
-            type.getTypeName(), columnName, *postArgs
-        )
+        is Table.Column.Type.NonPrimitive.Array -> {
+            when (val elementType = type.elementType) {
+                is Table.Column.Type.NonPrimitive.Enum -> initializer(
+                    """
+                    |%T<%T>(
+                    |    name = %S,
+                    |    sql = %S,
+                    |    fromDb = { %T<%T>(it as String) },
+                    |    toDb = { it.toPgObject() },
+                    |)$postfix""".trimMargin(),
+                    customEnumerationArray,
+                    type.getTypeName(),
+                    columnName,
+                    "${elementType.name.schema.schemaName}.${elementType.name.name}",
+                    typeNameGetPgEnumByLabel,
+                    elementType.name.typeName,
+                    *postArgs,
+                )
+
+                else -> initializer(
+                    "array<%T>(name = %S)$postfix",
+                    type.getTypeName(), columnName, *postArgs
+                )
+            }
+        }
 
         is Table.Column.Type.NonPrimitive.Enum -> initializer(
             """
@@ -56,7 +77,7 @@ fun PropertySpec.Builder.initializer(column: Table.Column, postfix: String, post
                 toDb = { it.toPgObject() },
             )$postfix""".trimIndent(),
             columnName,
-            type.name.name,
+            "${type.name.schema.schemaName}.${type.name.name}",
             typeNameGetPgEnumByLabel,
             type.name.typeName,
             *postArgs

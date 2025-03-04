@@ -11,6 +11,8 @@ data class CodeGenContext(
 
     val getArrayColumnType
         get() = ClassName(packageCustomColumn.name, "getArrayColumnType")
+    val customEnumerationArray
+        get() = ClassName(packageCustomColumn.name, "customEnumerationArray")
     val typeNameMultiRange
         get() = ClassName(packageCustomColumn.name, "MultiRange")
     val defaultJsonColumnType
