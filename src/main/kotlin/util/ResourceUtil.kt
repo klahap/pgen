@@ -1,7 +1,6 @@
 package io.github.klahap.pgen.util
 
 import io.github.klahap.pgen.util.codegen.CodeGenContext
-import java.io.File
 
 data class DefaultCodeFile(
     private val relativePackageNames: List<String>,
@@ -16,16 +15,16 @@ data class DefaultCodeFile(
         .replace("import default_code", "import $rootPackageName")
 
     companion object {
-        private fun getResources(path: List<String>): Sequence<List<String>> {
-            val pathStr = path.joinToString("/")
-            val resource = javaClass.classLoader.getResource(pathStr) ?: error("Resource not found: $pathStr")
-            val childs = File(resource.toURI()).list()?.toList() ?: return sequenceOf(path)
-            return childs.asSequence().flatMap { child ->
-                getResources(path + listOf(child))
-            }
-        }
-
-        fun all() = getResources(listOf("default_code"))
-            .map { DefaultCodeFile(it.drop(1).dropLast(1), it.last()) }.toSet()
+        fun all() = setOf(
+            DefaultCodeFile(listOf("column_type"), "DefaultJsonColumnType.kt"),
+            DefaultCodeFile(listOf("column_type"), "IntMultiRange.kt"),
+            DefaultCodeFile(listOf("column_type"), "IntRange.kt"),
+            DefaultCodeFile(listOf("column_type"), "MultiRange.kt"),
+            DefaultCodeFile(listOf("column_type"), "MultiRangeColumnType.kt"),
+            DefaultCodeFile(listOf("column_type"), "RangeColumnType.kt"),
+            DefaultCodeFile(listOf("column_type"), "UnconstrainedNumericColumnType.kt"),
+            DefaultCodeFile(listOf("column_type"), "Util.kt"),
+            DefaultCodeFile(listOf("util"), "BatchUpdateStatementDsl.kt"),
+        )
     }
 }
