@@ -3,10 +3,13 @@ package io.github.klahap.pgen.service
 import io.github.klahap.pgen.dsl.execute
 import io.github.klahap.pgen.dsl.executeQuery
 import io.github.klahap.pgen.model.*
+import io.github.klahap.pgen.model.config.Config
+import io.github.klahap.pgen.model.config.SqlObjectFilter
 import io.github.klahap.pgen.model.sql.*
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.Table.Column.Type
 import io.github.klahap.pgen.model.sql.Table.Column.Type.*
+import io.github.klahap.pgen.model.sql.Table.Column.Type.NonPrimitive.Domain
 import org.postgresql.util.PGobject
 import java.io.Closeable
 import java.sql.DriverManager
@@ -165,6 +168,8 @@ class DbService(
                 c.table_schema AS table_schema,
                 c.table_name AS table_name,
                 c.column_name AS column_name,
+                c.domain_schema as domain_schema,
+                c.domain_name as domain_name,
                 c.is_nullable AS is_nullable,
                 c.udt_schema AS column_type_schema,
                 c.udt_name AS column_type_name,
@@ -189,9 +194,24 @@ class DbService(
                 schema = dbName.toSchema(resultSet.getString("table_schema")!!),
                 name = resultSet.getString("table_name")!!,
             )
+
+            val rawType = resultSet.getColumnType()
+            val type = run {
+                Domain(
+                    name = SqlObjectName(
+                        schema = SchemaName(
+                            dbName = dbName,
+                            schemaName = resultSet.getString("domain_schema") ?: return@run null,
+                        ),
+                        name = resultSet.getString("domain_name") ?: return@run null,
+                    ),
+                    originalType = rawType,
+                )
+            } ?: rawType
+
             tableName to Table.Column(
                 name = Table.ColumnName(resultSet.getString("column_name")!!),
-                type = resultSet.getColumnType(),
+                type = type,
                 isNullable = resultSet.getBoolean("is_nullable"),
                 default = resultSet.getString("column_default")
             )

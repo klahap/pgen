@@ -3,9 +3,10 @@ package io.github.klahap.pgen
 import com.charleskorn.kaml.PolymorphismStyle
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
-import io.github.klahap.pgen.model.Config.Companion.buildConfig
+import io.github.klahap.pgen.model.config.Config.Companion.buildConfig
 import io.github.klahap.pgen.model.sql.Table
-import io.github.klahap.pgen.model.Config
+import io.github.klahap.pgen.model.config.Config
+import io.github.klahap.pgen.model.config.TypeMapping
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.PgenSpec
 import io.github.klahap.pgen.model.sql.Statement
@@ -42,13 +43,19 @@ private fun generateSpec(config: Config) {
                 .map { if (it is Table.Column.Type.NonPrimitive.Array) it.elementType else it }
                 .filterIsInstance<Table.Column.Type.NonPrimitive.Enum>().map { it.name }.toSet()
             val enums = dbService.getEnums(enumNames)
-            PgenSpec(tables = tables, enums = enums, statements = statements)
+            PgenSpec(
+                tables = tables,
+                enums = enums,
+                statements = statements,
+                typeMappings = configDb.typeMappings.toList(),
+            )
         }
     }
     val spec = PgenSpec(
         tables = specData.flatMap(PgenSpec::tables).sortedBy(Table::name),
         enums = specData.flatMap(PgenSpec::enums).sortedBy(Enum::name),
         statements = specData.flatMap(PgenSpec::statements).sortedBy(Statement::name),
+        typeMappings = specData.flatMap(PgenSpec::typeMappings).sortedBy(TypeMapping::sqlType)
     )
     config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
@@ -60,10 +67,12 @@ private fun generateCode(config: Config) {
     CodeGenContext(
         rootPackageName = config.packageName,
         createDirectoriesForRootPackageName = config.createDirectoriesForRootPackageName,
+        typeMappings = spec.typeMappings.associate { it.sqlType to it.clazzClassName }
     ).run {
         directorySync(config.outputPath) {
             DefaultCodeFile.all().forEach { sync(it) }
             spec.enums.forEach { sync(it) }
+            spec.domains.filter { it.name !in typeMappings }.forEach { sync(it) }
             spec.tables.forEach { sync(it) }
             spec.statements.groupBy { it.name.dbName }.values.forEach { sync(it) }
             cleanup()
@@ -89,7 +98,10 @@ fun main() {
                 addSchemas("public")
             }
             statements {
-                addScript("./test-queries.sql")
+                //addScript("./test-queries.sql")
+            }
+            typeMappings {
+                addMapping(sqlType = "public.stripe_account_id", clazz = "io.github.klahap.pgen_test.StripeAccountId")
             }
         }
         packageName("io.github.klahap.pgen_test.db")

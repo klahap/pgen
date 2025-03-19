@@ -9,6 +9,7 @@ import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.SqlObject
 import io.github.klahap.pgen.model.sql.Statement
 import io.github.klahap.pgen.model.sql.Table
+import io.github.klahap.pgen.model.sql.Table.Column.Type.NonPrimitive.Domain
 import io.github.klahap.pgen.service.DirectorySyncService
 import io.github.klahap.pgen.util.DefaultCodeFile
 import java.time.OffsetDateTime
@@ -48,6 +49,7 @@ context(CodeGenContext)
 fun SqlObject.toTypeSpec() = when (this) {
     is Enum -> toTypeSpecInternal()
     is Table -> toTypeSpecInternal()
+    is Domain -> toTypeSpecInternal()
 }
 
 context(CodeGenContext)

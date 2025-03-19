@@ -31,6 +31,15 @@ fun buildClass(
     block: TypeSpec.Builder.() -> Unit,
 ) = TypeSpec.classBuilder(name).apply(block).build()
 
+fun buildValueClass(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = TypeSpec.classBuilder(name).apply {
+    addModifiers(KModifier.VALUE)
+    addAnnotation(JvmInline::class)
+    block()
+}.build()
+
 fun TypeSpec.Builder.addClass(
     name: String,
     block: TypeSpec.Builder.() -> Unit,

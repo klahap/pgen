@@ -17,6 +17,7 @@ data class DefaultCodeFile(
     companion object {
         fun all() = setOf(
             DefaultCodeFile(listOf("column_type"), "DefaultJsonColumnType.kt"),
+            DefaultCodeFile(listOf("column_type"), "DomainColumnType.kt"),
             DefaultCodeFile(listOf("column_type"), "IntMultiRange.kt"),
             DefaultCodeFile(listOf("column_type"), "IntRange.kt"),
             DefaultCodeFile(listOf("column_type"), "MultiRange.kt"),

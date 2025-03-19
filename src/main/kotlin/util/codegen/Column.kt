@@ -83,6 +83,19 @@ fun PropertySpec.Builder.initializer(column: Table.Column, postfix: String, post
             *postArgs
         )
 
+        is Table.Column.Type.NonPrimitive.Domain -> initializer(
+            """
+            %T<%T>(
+                name = %S,
+                sqlType = %S,
+            )$postfix""".trimIndent(),
+            domainType,
+            type.getDomainTypename(),
+            columnName,
+            type.sqlType,
+            *postArgs
+        )
+
         Table.Column.Type.Primitive.INT8 -> initializer("long(name = %S)$postfix", columnName, *postArgs)
         Table.Column.Type.Primitive.BOOL -> initializer("bool(name = %S)$postfix", columnName, *postArgs)
         Table.Column.Type.Primitive.BINARY -> initializer("binary(name = %S)$postfix", columnName, *postArgs)

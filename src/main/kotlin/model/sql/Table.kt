@@ -1,6 +1,8 @@
 package io.github.klahap.pgen.model.sql
 
+import com.squareup.kotlinpoet.TypeName
 import io.github.klahap.pgen.util.ColumnTypeSerializer
+import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.makeDifferent
 import io.github.klahap.pgen.util.toCamelCase
 import kotlinx.serialization.SerialName
@@ -70,6 +72,18 @@ data class Table(
                 @Serializable
                 @SerialName("numeric")
                 data class Numeric(val precision: Int, val scale: Int) : NonPrimitive
+
+                @Serializable
+                @SerialName("domain")
+                data class Domain(
+                    override val name: SqlObjectName,
+                    val originalType: Type
+                ) : SqlObject, NonPrimitive {
+                    val sqlType get() = "${name.schema.schemaName}.${name.name}"
+
+                    context(CodeGenContext)
+                    fun getDomainTypename(): TypeName = typeMappings[name] ?: name.typeName
+                }
             }
 
             @Serializable

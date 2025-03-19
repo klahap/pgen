@@ -1,10 +1,12 @@
-package io.github.klahap.pgen.model
+package io.github.klahap.pgen.model.config
 
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.sql.DbName
-import io.github.klahap.pgen.model.sql.SqlObjectFilter
+import io.github.klahap.pgen.model.sql.SchemaName
+import io.github.klahap.pgen.model.sql.SqlObjectName
 import java.nio.file.Path
 import kotlin.io.path.Path
+import kotlin.text.compareTo
 
 data class Config(
     val dbConfigs: List<Db>,
@@ -18,6 +20,7 @@ data class Config(
         val connectionConfig: DbConnectionConfig?,
         val tableFilter: SqlObjectFilter,
         val statementScripts: Set<Path>,
+        val typeMappings: Set<TypeMapping>,
     ) {
         data class DbConnectionConfig(
             val url: String,
@@ -47,12 +50,42 @@ data class Config(
             private var connectionConfig: DbConnectionConfig? = null
             private var tableFilter: SqlObjectFilter? = null
             private var statementScripts: Set<Path>? = null
+            private var typeMappings: Set<TypeMapping>? = null
 
             class StatementCollectionBuilder {
                 private val scripts = linkedSetOf<Path>()
                 fun addScript(file: Path) = apply { scripts.add(file) }
                 fun addScript(file: String) = apply { scripts.add(Path(file)) }
                 fun build() = scripts.toSet()
+            }
+
+            class TypeMappingBuilder(private val dbName: DbName) {
+                private val types = linkedSetOf<TypeMapping>()
+                fun addMapping(sqlType: String, clazz: String) =
+                    apply {
+                        val (schemaName, name) = sqlType.takeIfValidAbsoluteClazzName(size = 2)?.split('.')
+                            ?: throw IllegalArgumentException("illegal sqlType '$sqlType', expected format <schema>.<name>")
+                        val objName = SqlObjectName(
+                            schema = SchemaName(dbName = dbName, schemaName = schemaName),
+                            name = name,
+                        )
+                        clazz.takeIfValidAbsoluteClazzName()
+                            ?: throw IllegalArgumentException("illegal class name '$clazz', provide full class name with package")
+                        types.add(TypeMapping(sqlType = objName, clazz = clazz))
+                    }
+
+                fun build() = types.toSet()
+
+                companion object {
+                    private fun String.takeIfValidAbsoluteClazzName(size: Int? = null): String? {
+                        val parts = split('.')
+                        if (parts.any(String::isBlank)) return null
+                        return if (size != null)
+                            takeIf { parts.size == size }
+                        else
+                            takeIf { parts.size > 1 }
+                    }
+                }
             }
 
             fun connectionConfig(ignoreErrors: Boolean = true, block: DbConnectionConfig.Builder.() -> Unit) = apply {
@@ -73,11 +106,16 @@ data class Config(
                 statementScripts = StatementCollectionBuilder().apply(block).build()
             }
 
+            fun typeMappings(block: TypeMappingBuilder.() -> Unit) {
+                typeMappings = TypeMappingBuilder(dbName = dbName).apply(block).build()
+            }
+
             fun build() = Db(
                 dbName = dbName,
                 connectionConfig = connectionConfig,
                 tableFilter = tableFilter ?: error("no table filter defined for DB config '$dbName'"),
                 statementScripts = statementScripts ?: emptySet(),
+                typeMappings = typeMappings?.distinctBy(TypeMapping::sqlType)?.toSet() ?: emptySet(),
             )
         }
     }

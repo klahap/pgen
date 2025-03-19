@@ -1,4 +1,8 @@
-package io.github.klahap.pgen.model.sql
+package io.github.klahap.pgen.model.config
+
+import io.github.klahap.pgen.model.sql.DbName
+import io.github.klahap.pgen.model.sql.SchemaName
+import io.github.klahap.pgen.model.sql.SqlObjectName
 
 sealed interface SqlObjectFilter {
     fun toFilterString(schemaField: String, tableField: String): String

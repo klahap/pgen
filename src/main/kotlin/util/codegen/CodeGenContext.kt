@@ -1,16 +1,24 @@
 package io.github.klahap.pgen.util.codegen
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.TypeName
 import io.github.klahap.pgen.dsl.PackageName
+import io.github.klahap.pgen.model.config.TypeMapping
+import io.github.klahap.pgen.model.sql.SqlObjectName
 
 data class CodeGenContext(
     val rootPackageName: PackageName,
     val createDirectoriesForRootPackageName: Boolean,
+    val typeMappings: Map<SqlObjectName, TypeName>,
 ) {
     private val packageCustomColumn = PackageName("$rootPackageName.column_type")
 
     val getArrayColumnType
         get() = ClassName(packageCustomColumn.name, "getArrayColumnType")
+    val domainType
+        get() = ClassName(packageCustomColumn.name, "domainType")
+    val domainTypeColumn
+        get() = ClassName(packageCustomColumn.name, "DomainTypeColumn")
     val customEnumerationArray
         get() = ClassName(packageCustomColumn.name, "customEnumerationArray")
     val typeNameMultiRange

@@ -46,6 +46,11 @@ fun <T : Enum<T>> Table.customEnumerationArray(
     return array(name = name, columnType = enumColumnType)
 }
 
+inline fun <reified T: Any> Table.domainType(name: String, sqlType: String): Column<T> {
+    val type = DomainColumnType(T::class, sqlType = sqlType)
+    return registerColumn(name = name, type = type)
+}
+
 internal fun List<RawRange>.toInt4MultiRange(): MultiRange<Int> = MultiRange(map { it.toInt4Range() }.toSet())
 internal fun List<RawRange>.toInt8MultiRange(): MultiRange<Long> = MultiRange(map { it.toInt8Range() }.toSet())
 internal fun String.parseMultiRange(): List<RawRange> = trimStart('{').trimEnd('}')

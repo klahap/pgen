@@ -17,6 +17,7 @@ fun Table.Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = wh
     else
         List::class.asTypeName().parameterizedBy(elementType.getTypeName())
 
+    is Table.Column.Type.NonPrimitive.Domain -> getDomainTypename()
     is Table.Column.Type.NonPrimitive.Enum -> name.typeName
     is Table.Column.Type.NonPrimitive.Numeric -> BigDecimal::class.asTypeName()
     Table.Column.Type.Primitive.INT8 -> Long::class.asTypeName()
@@ -56,6 +57,9 @@ fun Table.Column.Type.getExposedColumnType(): CodeBlock = when (this) {
             "%T(precision = $precision, scale = $scale)",
             ClassName("org.jetbrains.exposed.sql", "DecimalColumnType")
         )
+
+    is Table.Column.Type.NonPrimitive.Domain ->
+        codeBlock("%T(kClass=%T::class, sqlType=%S)", domainTypeColumn, getDomainTypename(), sqlType)
 
     Table.Column.Type.Primitive.INT8 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "LongColumnType"))
     Table.Column.Type.Primitive.BOOL -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "BooleanColumnType"))
