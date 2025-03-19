@@ -97,7 +97,7 @@ class DbService(
         return tableNames.map { tableName ->
             Table(
                 name = tableName,
-                columns = columns[tableName] ?: emptyList(),
+                columns = (columns[tableName] ?: emptyList()).sortedBy { it.pos },
                 primaryKey = primaryKeys[tableName],
                 foreignKeys = foreignKeys[tableName] ?: emptyList(),
             )
@@ -165,6 +165,7 @@ class DbService(
         return connection.executeQuery(
             """
             SELECT
+                c.ordinal_position as pos,
                 c.table_schema AS table_schema,
                 c.table_name AS table_name,
                 c.column_name AS column_name,
@@ -210,6 +211,7 @@ class DbService(
             } ?: rawType
 
             tableName to Table.Column(
+                pos = resultSet.getInt("pos"),
                 name = Table.ColumnName(resultSet.getString("column_name")!!),
                 type = type,
                 isNullable = resultSet.getBoolean("is_nullable"),

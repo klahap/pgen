@@ -7,6 +7,7 @@ import io.github.klahap.pgen.util.makeDifferent
 import io.github.klahap.pgen.util.toCamelCase
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 data class Table(
@@ -50,6 +51,7 @@ data class Table(
 
     @Serializable
     data class Column(
+        @Transient val pos: Int = -1,
         val name: ColumnName,
         val type: Type,
         val isNullable: Boolean = false,
