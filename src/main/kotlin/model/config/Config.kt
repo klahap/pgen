@@ -2,11 +2,12 @@ package io.github.klahap.pgen.model.config
 
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.sql.DbName
+import io.github.klahap.pgen.model.sql.KotlinClassName
 import io.github.klahap.pgen.model.sql.SchemaName
+import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
 import java.nio.file.Path
 import kotlin.io.path.Path
-import kotlin.text.compareTo
 
 data class Config(
     val dbConfigs: List<Db>,
@@ -21,6 +22,7 @@ data class Config(
         val tableFilter: SqlObjectFilter,
         val statementScripts: Set<Path>,
         val typeMappings: Set<TypeMapping>,
+        val typeOverwrites: Set<TypeOverwrite>,
     ) {
         data class DbConnectionConfig(
             val url: String,
@@ -51,6 +53,7 @@ data class Config(
             private var tableFilter: SqlObjectFilter? = null
             private var statementScripts: Set<Path>? = null
             private var typeMappings: Set<TypeMapping>? = null
+            private var typeOverwrites: Set<TypeOverwrite>? = null
 
             class StatementCollectionBuilder {
                 private val scripts = linkedSetOf<Path>()
@@ -60,7 +63,7 @@ data class Config(
             }
 
             class TypeMappingBuilder(private val dbName: DbName) {
-                private val types = linkedSetOf<TypeMapping>()
+                private val mappings = linkedSetOf<TypeMapping>()
                 fun addMapping(sqlType: String, clazz: String) =
                     apply {
                         val (schemaName, name) = sqlType.takeIfValidAbsoluteClazzName(size = 2)?.split('.')
@@ -69,23 +72,30 @@ data class Config(
                             schema = SchemaName(dbName = dbName, schemaName = schemaName),
                             name = name,
                         )
-                        clazz.takeIfValidAbsoluteClazzName()
-                            ?: throw IllegalArgumentException("illegal class name '$clazz', provide full class name with package")
-                        types.add(TypeMapping(sqlType = objName, clazz = clazz))
+                        mappings.add(TypeMapping(sqlType = objName, clazz = clazz.toKotlinClassName()))
                     }
 
-                fun build() = types.toSet()
+                fun build() = mappings.toSet()
+            }
 
-                companion object {
-                    private fun String.takeIfValidAbsoluteClazzName(size: Int? = null): String? {
-                        val parts = split('.')
-                        if (parts.any(String::isBlank)) return null
-                        return if (size != null)
-                            takeIf { parts.size == size }
-                        else
-                            takeIf { parts.size > 1 }
+            class TypeOverwriteBuilder(private val dbName: DbName) {
+                private val overwrites = linkedSetOf<TypeOverwrite>()
+                fun addOverwrite(sqlColumn: String, clazz: String) =
+                    apply {
+                        val (schemaName, tableName, columnName) = sqlColumn.takeIfValidAbsoluteClazzName(size = 3)
+                            ?.split('.')
+                            ?: throw IllegalArgumentException("illegal column name '$sqlColumn', expected format <schema>.<table>.<name>")
+                        val column = SqlColumnName(
+                            tableName = SqlObjectName(
+                                schema = SchemaName(dbName = dbName, schemaName = schemaName),
+                                name = tableName,
+                            ),
+                            name = columnName,
+                        )
+                        overwrites.add(TypeOverwrite(sqlColumn = column, clazz = clazz.toKotlinClassName()))
                     }
-                }
+
+                fun build() = overwrites.toSet()
             }
 
             fun connectionConfig(ignoreErrors: Boolean = true, block: DbConnectionConfig.Builder.() -> Unit) = apply {
@@ -110,13 +120,38 @@ data class Config(
                 typeMappings = TypeMappingBuilder(dbName = dbName).apply(block).build()
             }
 
+            fun typeOverwrites(block: TypeOverwriteBuilder.() -> Unit) {
+                typeOverwrites = TypeOverwriteBuilder(dbName = dbName).apply(block).build()
+            }
+
             fun build() = Db(
                 dbName = dbName,
                 connectionConfig = connectionConfig,
                 tableFilter = tableFilter ?: error("no table filter defined for DB config '$dbName'"),
                 statementScripts = statementScripts ?: emptySet(),
                 typeMappings = typeMappings?.distinctBy(TypeMapping::sqlType)?.toSet() ?: emptySet(),
+                typeOverwrites = typeOverwrites?.distinctBy(TypeOverwrite::sqlColumn)?.toSet() ?: emptySet(),
             )
+
+            companion object {
+                private fun String.takeIfValidAbsoluteClazzName(size: Int? = null): String? {
+                    val parts = split('.')
+                    if (parts.any(String::isBlank)) return null
+                    return if (size != null)
+                        takeIf { parts.size == size }
+                    else
+                        takeIf { parts.size > 1 }
+                }
+
+                private fun String.toKotlinClassName(): KotlinClassName {
+                    takeIfValidAbsoluteClazzName()
+                        ?: throw IllegalArgumentException("illegal class name '$this', provide full class name with package")
+                    return KotlinClassName(
+                        packageName = substringBeforeLast('.'),
+                        className = substringAfterLast('.'),
+                    )
+                }
+            }
         }
     }
 

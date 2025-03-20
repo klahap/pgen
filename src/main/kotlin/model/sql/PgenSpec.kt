@@ -1,6 +1,7 @@
 package io.github.klahap.pgen.model.sql
 
 import io.github.klahap.pgen.model.config.TypeMapping
+import io.github.klahap.pgen.model.config.TypeOverwrite
 import kotlinx.serialization.Serializable
 
 
@@ -10,6 +11,7 @@ data class PgenSpec(
     val enums: List<Enum>,
     val statements: List<Statement>,
     val typeMappings: List<TypeMapping>,
+    val typeOverwrites: List<TypeOverwrite>,
 ) {
     val domains
         get() = tables

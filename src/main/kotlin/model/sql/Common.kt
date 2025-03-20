@@ -3,6 +3,8 @@ package io.github.klahap.pgen.model.sql
 import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.dsl.PackageName
+import io.github.klahap.pgen.util.KotlinClassNameSerializer
+import io.github.klahap.pgen.util.SqlColumnNameSerializer
 import io.github.klahap.pgen.util.SqlObjectNameSerializer
 import io.github.klahap.pgen.util.SqlStatementNameSerializer
 import io.github.klahap.pgen.util.kotlinKeywords
@@ -74,4 +76,22 @@ data class SqlObjectName(
     override fun compareTo(other: SqlObjectName): Int =
         schema.compareTo(other.schema).takeIf { it != 0 }
             ?: name.compareTo(other.name)
+}
+
+@Serializable(with = SqlColumnNameSerializer::class)
+data class SqlColumnName(
+    val tableName: SqlObjectName,
+    val name: String,
+) : Comparable<SqlColumnName> {
+    override fun compareTo(other: SqlColumnName): Int =
+        tableName.compareTo(other.tableName).takeIf { it != 0 }
+            ?: name.compareTo(other.name)
+}
+
+@Serializable(with = KotlinClassNameSerializer::class)
+data class KotlinClassName(
+    val packageName: String,
+    val className: String,
+) {
+    val poet get() = ClassName(packageName, className)
 }

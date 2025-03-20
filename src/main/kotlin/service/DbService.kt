@@ -137,29 +137,6 @@ class DbService(
         }
     }
 
-    private fun getPrimitiveType(name: String) = when (name) {
-        "bool" -> Primitive.BOOL
-        "bytea" -> Primitive.BINARY
-        "date" -> Primitive.DATE
-        "int2" -> Primitive.INT2
-        "int4" -> Primitive.INT4
-        "int8" -> Primitive.INT8
-        "int4range" -> Primitive.INT4RANGE
-        "int8range" -> Primitive.INT8RANGE
-        "int4multirange" -> Primitive.INT4MULTIRANGE
-        "int8multirange" -> Primitive.INT8MULTIRANGE
-        "interval" -> Primitive.INTERVAL
-        "json" -> Primitive.JSON
-        "jsonb" -> Primitive.JSONB
-        "text" -> Primitive.TEXT
-        "time" -> Primitive.TIME
-        "timestamp" -> Primitive.TIMESTAMP
-        "timestamptz" -> Primitive.TIMESTAMP_WITH_TIMEZONE
-        "uuid" -> Primitive.UUID
-        "varchar" -> Primitive.VARCHAR
-        else -> error("undefined primitive type name '$name'")
-    }
-
     private fun getColumns(filter: SqlObjectFilter): Map<SqlObjectName, List<Table.Column>> {
         if (filter.isEmpty()) return emptyMap()
         return connection.executeQuery(
@@ -362,5 +339,11 @@ class DbService(
 
     override fun close() {
         connection.close()
+    }
+
+    companion object {
+        private fun getPrimitiveType(name: String) =
+            Primitive.entries.firstOrNull { it.sqlType == name }
+                ?: error("undefined primitive type name '$name'")
     }
 }

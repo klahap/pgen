@@ -4,7 +4,9 @@ import com.charleskorn.kaml.YamlInput
 import com.charleskorn.kaml.YamlMap
 import com.charleskorn.kaml.YamlScalar
 import io.github.klahap.pgen.model.sql.DbName
+import io.github.klahap.pgen.model.sql.KotlinClassName
 import io.github.klahap.pgen.model.sql.SchemaName
+import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
 import io.github.klahap.pgen.model.sql.SqlStatementName
 import io.github.klahap.pgen.model.sql.Table
@@ -56,7 +58,6 @@ object ColumnTypeSerializer : KSerializer<Table.Column.Type> {
     }
 }
 
-
 object SqlObjectNameSerializer : KSerializer<SqlObjectName> {
     @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
     override val descriptor: SerialDescriptor = buildSerialDescriptor(
@@ -67,7 +68,12 @@ object SqlObjectNameSerializer : KSerializer<SqlObjectName> {
     }
 
     override fun serialize(encoder: Encoder, value: SqlObjectName) {
-        encoder.encodeString("${value.schema.dbName}.${value.schema.schemaName}.${value.name}")
+        val valueStr = listOf(
+            value.schema.dbName,
+            value.schema.schemaName,
+            value.name,
+        ).joinToString(".")
+        encoder.encodeString(valueStr)
     }
 
     override fun deserialize(decoder: Decoder): SqlObjectName {
@@ -79,6 +85,67 @@ object SqlObjectNameSerializer : KSerializer<SqlObjectName> {
             ),
             name = name,
         )
+    }
+}
+
+
+object SqlColumnNameSerializer : KSerializer<SqlColumnName> {
+    @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
+    override val descriptor: SerialDescriptor = buildSerialDescriptor(
+        SqlColumnNameSerializer::class.java.name,
+        SerialKind.CONTEXTUAL
+    ) {
+        element<String>("string")
+    }
+
+    override fun serialize(encoder: Encoder, value: SqlColumnName) {
+        val valueStr = listOf(
+            value.tableName.schema.dbName,
+            value.tableName.schema.schemaName,
+            value.tableName.name,
+            value.name,
+        ).joinToString(".")
+        encoder.encodeString(valueStr)
+    }
+
+    override fun deserialize(decoder: Decoder): SqlColumnName {
+        val (db, schema, table, name) = decoder.decodeString().split('.')
+        val tableName = SqlObjectName(
+            schema = SchemaName(
+                dbName = DbName(db),
+                schemaName = schema,
+            ),
+            name = table,
+        )
+        return SqlColumnName(tableName = tableName, name = name)
+    }
+}
+
+
+object KotlinClassNameSerializer : KSerializer<KotlinClassName> {
+    @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
+    override val descriptor: SerialDescriptor = buildSerialDescriptor(
+        KotlinClassName::class.java.name,
+        SerialKind.CONTEXTUAL
+    ) {
+        element<String>("string")
+    }
+
+    override fun serialize(encoder: Encoder, value: KotlinClassName) {
+        val valueStr = listOf(
+            value.packageName,
+            value.className,
+        ).joinToString(".")
+        encoder.encodeString(valueStr)
+    }
+
+    override fun deserialize(decoder: Decoder): KotlinClassName {
+        val str = decoder.decodeString()
+        val className = KotlinClassName(
+            packageName = str.substringBeforeLast('.'),
+            className = str.substringAfterLast('.'),
+        )
+        return className
     }
 }
 

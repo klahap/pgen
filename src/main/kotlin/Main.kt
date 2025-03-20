@@ -7,6 +7,7 @@ import io.github.klahap.pgen.model.config.Config.Companion.buildConfig
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.config.TypeMapping
+import io.github.klahap.pgen.model.config.TypeOverwrite
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.PgenSpec
 import io.github.klahap.pgen.model.sql.Statement
@@ -48,6 +49,7 @@ private fun generateSpec(config: Config) {
                 enums = enums,
                 statements = statements,
                 typeMappings = configDb.typeMappings.toList(),
+                typeOverwrites = configDb.typeOverwrites.toList(),
             )
         }
     }
@@ -55,7 +57,8 @@ private fun generateSpec(config: Config) {
         tables = specData.flatMap(PgenSpec::tables).sortedBy(Table::name),
         enums = specData.flatMap(PgenSpec::enums).sortedBy(Enum::name),
         statements = specData.flatMap(PgenSpec::statements).sortedBy(Statement::name),
-        typeMappings = specData.flatMap(PgenSpec::typeMappings).sortedBy(TypeMapping::sqlType)
+        typeMappings = specData.flatMap(PgenSpec::typeMappings).sortedBy(TypeMapping::sqlType),
+        typeOverwrites = specData.flatMap(PgenSpec::typeOverwrites).sortedBy(TypeOverwrite::sqlColumn),
     )
     config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
@@ -67,13 +70,14 @@ private fun generateCode(config: Config) {
     CodeGenContext(
         rootPackageName = config.packageName,
         createDirectoriesForRootPackageName = config.createDirectoriesForRootPackageName,
-        typeMappings = spec.typeMappings.associate { it.sqlType to it.clazzClassName }
+        typeMappings = spec.typeMappings.associate { it.sqlType to it.clazz },
+        typeOverwrites = spec.typeOverwrites.associate { it.sqlColumn to it.clazz },
     ).run {
         directorySync(config.outputPath) {
             DefaultCodeFile.all().forEach { sync(it) }
             spec.enums.forEach { sync(it) }
             spec.domains.filter { it.name !in typeMappings }.forEach { sync(it) }
-            spec.tables.forEach { sync(it) }
+            spec.tables.map { it.update() }.forEach { sync(it) }
             spec.statements.groupBy { it.name.dbName }.values.forEach { sync(it) }
             cleanup()
         }
@@ -102,6 +106,9 @@ fun main() {
             }
             typeMappings {
                 addMapping(sqlType = "public.stripe_account_id", clazz = "io.github.klahap.pgen_test.StripeAccountId")
+            }
+            typeOverwrites {
+                addOverwrite(sqlColumn = "public.foo.id", clazz = "io.github.klahap.pgen_test.QuatiId")
             }
         }
         packageName("io.github.klahap.pgen_test.db")

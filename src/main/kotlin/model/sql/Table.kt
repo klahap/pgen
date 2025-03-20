@@ -61,19 +61,27 @@ data class Table(
 
         @Serializable(with = ColumnTypeSerializer::class)
         sealed interface Type {
+            val sqlType: String
+
             @Serializable
             sealed interface NonPrimitive : Type {
                 @Serializable
                 @SerialName("array")
-                data class Array(val elementType: Type) : NonPrimitive
+                data class Array(val elementType: Type) : NonPrimitive {
+                    override val sqlType get() = "${elementType.sqlType}[]"
+                }
 
                 @Serializable
                 @SerialName("enum")
-                data class Enum(val name: SqlObjectName) : NonPrimitive
+                data class Enum(val name: SqlObjectName) : NonPrimitive {
+                    override val sqlType get() = "${name.schema.schemaName}.${name.name}"
+                }
 
                 @Serializable
                 @SerialName("numeric")
-                data class Numeric(val precision: Int, val scale: Int) : NonPrimitive
+                data class Numeric(val precision: Int, val scale: Int) : NonPrimitive {
+                    override val sqlType get() = ""
+                }
 
                 @Serializable
                 @SerialName("domain")
@@ -81,35 +89,44 @@ data class Table(
                     override val name: SqlObjectName,
                     val originalType: Type
                 ) : SqlObject, NonPrimitive {
-                    val sqlType get() = "${name.schema.schemaName}.${name.name}"
+                    override val sqlType get() = "${name.schema.schemaName}.${name.name}"
 
                     context(CodeGenContext)
-                    fun getDomainTypename(): TypeName = typeMappings[name] ?: name.typeName
+                    fun getDomainTypename(): TypeName = typeMappings[name]?.poet ?: name.typeName
+                }
+
+                @Serializable
+                @SerialName("reference")
+                data class Reference(
+                    val clazz: KotlinClassName,
+                    val originalType: Type,
+                ) : NonPrimitive {
+                    override val sqlType: String get() = originalType.sqlType
                 }
             }
 
             @Serializable
-            enum class Primitive : Type {
-                INT2,
-                INT4,
-                INT8,
-                BOOL,
-                BINARY,
-                UNCONSTRAINED_NUMERIC,
-                TEXT,
-                TIME,
-                TIMESTAMP,
-                TIMESTAMP_WITH_TIMEZONE,
-                UUID,
-                VARCHAR,
-                DATE,
-                INTERVAL,
-                INT4RANGE,
-                INT8RANGE,
-                INT4MULTIRANGE,
-                INT8MULTIRANGE,
-                JSON,
-                JSONB,
+            enum class Primitive(override val sqlType: String) : Type {
+                BOOL("bool"),
+                BINARY("bytea"),
+                DATE("date"),
+                INT2("int2"),
+                INT4("int4"),
+                INT8("int8"),
+                INT4RANGE("int4range"),
+                INT8RANGE("int8range"),
+                INT4MULTIRANGE("int4multirange"),
+                INT8MULTIRANGE("int8multirange"),
+                INTERVAL("interval"),
+                JSON("json"),
+                JSONB("jsonb"),
+                TEXT("text"),
+                TIME("time"),
+                TIMESTAMP("timestamp"),
+                TIMESTAMP_WITH_TIMEZONE("timestamptz"),
+                UUID("uuid"),
+                VARCHAR("varchar"),
+                UNCONSTRAINED_NUMERIC("numeric"),
             }
         }
     }

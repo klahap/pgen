@@ -16,7 +16,8 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
         .filterIsInstance<Table.ForeignKeyTyped.SingleKey>()
         .associate { it.reference.sourceColumn to (it.targetTable to it.reference.targetColumn) }
     superclass(Poet.table)
-    addSuperclassConstructorParameter("%S",
+    addSuperclassConstructorParameter(
+        "%S",
         "${this@toTypeSpecInternal.name.schema.schemaName}.${this@toTypeSpecInternal.name.name}"
     )
     this@toTypeSpecInternal.columns.forEach { column ->
