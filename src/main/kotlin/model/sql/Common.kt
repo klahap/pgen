@@ -95,3 +95,9 @@ data class KotlinClassName(
 ) {
     val poet get() = ClassName(packageName, className)
 }
+
+@Serializable
+data class KotlinValueClass(
+    val name: KotlinClassName,
+    val parseFunction: String? = null,
+)

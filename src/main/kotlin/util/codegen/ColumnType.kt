@@ -18,7 +18,7 @@ fun Table.Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = wh
         List::class.asTypeName().parameterizedBy(elementType.getTypeName())
 
     is Table.Column.Type.NonPrimitive.Domain -> getDomainTypename()
-    is Table.Column.Type.NonPrimitive.Reference -> clazz.poet
+    is Table.Column.Type.NonPrimitive.Reference -> getValueClass().name.poet
     is Table.Column.Type.NonPrimitive.Enum -> name.typeName
     is Table.Column.Type.NonPrimitive.Numeric -> BigDecimal::class.asTypeName()
     Table.Column.Type.Primitive.INT8 -> Long::class.asTypeName()
@@ -63,7 +63,7 @@ fun Table.Column.Type.getExposedColumnType(): CodeBlock = when (this) {
         codeBlock("%T(kClass=%T::class, sqlType=%S)", domainTypeColumn, getDomainTypename(), sqlType)
 
     is Table.Column.Type.NonPrimitive.Reference ->
-        codeBlock("%T(kClass=%T::class, sqlType=%S)", domainTypeColumn, clazz.poet, originalType.sqlType)
+        codeBlock("%T(kClass=%T::class, sqlType=%S)", domainTypeColumn, getValueClass().name.poet, originalType.sqlType)
 
     Table.Column.Type.Primitive.INT8 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "LongColumnType"))
     Table.Column.Type.Primitive.BOOL -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "BooleanColumnType"))

@@ -83,29 +83,19 @@ fun PropertySpec.Builder.initializer(column: Table.Column, postfix: String, post
             *postArgs
         )
 
-        is Table.Column.Type.NonPrimitive.Domain -> initializer(
+        is Table.Column.Type.NonPrimitive.DomainType -> initializer(
             """
             %T<%T>(
                 name = %S,
                 sqlType = %S,
+                builder = { %T${type.parserFunction}(it as %T) },
             )$postfix""".trimIndent(),
             domainType,
             type.getDomainTypename(),
             columnName,
             type.sqlType,
-            *postArgs
-        )
-
-        is Table.Column.Type.NonPrimitive.Reference -> initializer(
-            """
-            %T<%T>(
-                name = %S,
-                sqlType = %S,
-            )$postfix""".trimIndent(),
-            domainType,
-            type.clazz.poet,
-            columnName,
-            type.sqlType,
+            type.getDomainTypename(),
+            type.originalType.getTypeName(),
             *postArgs
         )
 

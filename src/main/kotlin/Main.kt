@@ -71,8 +71,8 @@ private fun generateCode(config: Config) {
     CodeGenContext(
         rootPackageName = config.packageName,
         createDirectoriesForRootPackageName = config.createDirectoriesForRootPackageName,
-        typeMappings = spec.typeMappings.associate { it.sqlType to it.clazz },
-        typeOverwrites = spec.typeOverwrites.associate { it.sqlColumn to it.clazz },
+        typeMappings = spec.typeMappings.associate { it.sqlType to it.valueClass },
+        typeOverwrites = spec.typeOverwrites.associate { it.sqlColumn to it.valueClass },
         typeGroups = spec.tables.getColumnTypeGroups()
     ).run {
         directorySync(config.outputPath) {
@@ -107,10 +107,14 @@ fun main() {
                 //addScript("./test-queries.sql")
             }
             typeMappings {
-                addMapping(sqlType = "public.stripe_account_id", clazz = "io.github.klahap.pgen_test.StripeAccountId")
+                add(sqlType = "public.stripe_account_id", clazz = "io.github.klahap.pgen_test.StripeAccountId")
             }
             typeOverwrites {
-                addOverwrite(sqlColumn = "public.foo.quati_id", clazz = "io.github.klahap.pgen_test.QuatiId")
+                add(
+                    sqlColumn = "public.foo.id",
+                    clazz = "io.github.klahap.pgen_test.MyId",
+                    parseFunction = "foo"
+                )
             }
         }
         packageName("io.github.klahap.pgen_test.db")

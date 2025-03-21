@@ -2,7 +2,7 @@ package io.github.klahap.pgen.util.codegen
 
 import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.dsl.PackageName
-import io.github.klahap.pgen.model.sql.KotlinClassName
+import io.github.klahap.pgen.model.sql.KotlinValueClass
 import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
 import io.github.klahap.pgen.model.sql.Table
@@ -10,11 +10,11 @@ import io.github.klahap.pgen.model.sql.Table
 class CodeGenContext(
     val rootPackageName: PackageName,
     val createDirectoriesForRootPackageName: Boolean,
-    val typeMappings: Map<SqlObjectName, KotlinClassName>,
-    typeOverwrites: Map<SqlColumnName, KotlinClassName>,
+    val typeMappings: Map<SqlObjectName, KotlinValueClass>,
+    typeOverwrites: Map<SqlColumnName, KotlinValueClass>,
     typeGroups: List<Set<SqlColumnName>>,
 ) {
-    val allTypeOverwrites: Map<SqlColumnName, KotlinClassName>
+    val allTypeOverwrites: Map<SqlColumnName, KotlinValueClass>
     private val packageCustomColumn = PackageName("$rootPackageName.column_type")
 
     init {
@@ -35,8 +35,11 @@ class CodeGenContext(
             if (column.type is Table.Column.Type.NonPrimitive.Reference) return@map column
             val kotlinClass = allTypeOverwrites[columnName] ?: return@map column
             val newType = Table.Column.Type.NonPrimitive.Reference(
-                clazz = kotlinClass,
-                originalType = column.type,
+                valueClass = kotlinClass,
+                originalType = when(val t = column.type) {
+                    is Table.Column.Type.NonPrimitive.Domain -> t.originalType
+                    else -> t
+                },
             )
             column.copy(type = newType)
         }

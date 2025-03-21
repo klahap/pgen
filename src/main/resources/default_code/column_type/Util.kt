@@ -46,8 +46,12 @@ fun <T : Enum<T>> Table.customEnumerationArray(
     return array(name = name, columnType = enumColumnType)
 }
 
-inline fun <reified T: Any> Table.domainType(name: String, sqlType: String): Column<T> {
-    val type = DomainColumnType(T::class, sqlType = sqlType)
+inline fun <reified T : Any> Table.domainType(
+    name: String,
+    sqlType: String,
+    noinline builder: (Any) -> T,
+): Column<T> {
+    val type = DomainColumnType(kClass = T::class, sqlType = sqlType, builder = builder)
     return registerColumn(name = name, type = type)
 }
 

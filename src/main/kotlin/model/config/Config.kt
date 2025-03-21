@@ -3,6 +3,7 @@ package io.github.klahap.pgen.model.config
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.sql.DbName
 import io.github.klahap.pgen.model.sql.KotlinClassName
+import io.github.klahap.pgen.model.sql.KotlinValueClass
 import io.github.klahap.pgen.model.sql.SchemaName
 import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
@@ -64,36 +65,54 @@ data class Config(
 
             class TypeMappingBuilder(private val dbName: DbName) {
                 private val mappings = linkedSetOf<TypeMapping>()
-                fun addMapping(sqlType: String, clazz: String) =
-                    apply {
-                        val (schemaName, name) = sqlType.takeIfValidAbsoluteClazzName(size = 2)?.split('.')
-                            ?: throw IllegalArgumentException("illegal sqlType '$sqlType', expected format <schema>.<name>")
-                        val objName = SqlObjectName(
+                fun add(
+                    sqlType: String,
+                    clazz: String,
+                    parseFunction: String? = null,
+                ) {
+                    val (schemaName, name) = sqlType.takeIfValidAbsoluteClazzName(size = 2)?.split('.')
+                        ?: throw IllegalArgumentException("illegal sqlType '$sqlType', expected format <schema>.<name>")
+                    val entity = TypeMapping(
+                        sqlType = SqlObjectName(
                             schema = SchemaName(dbName = dbName, schemaName = schemaName),
                             name = name,
-                        )
-                        mappings.add(TypeMapping(sqlType = objName, clazz = clazz.toKotlinClassName()))
-                    }
+                        ),
+                        valueClass = KotlinValueClass(
+                            name = clazz.toKotlinClassName(),
+                            parseFunction = parseFunction?.takeIf(String::isNotBlank),
+                        ),
+                    )
+                    mappings.add(entity)
+                }
 
                 fun build() = mappings.toSet()
             }
 
             class TypeOverwriteBuilder(private val dbName: DbName) {
                 private val overwrites = linkedSetOf<TypeOverwrite>()
-                fun addOverwrite(sqlColumn: String, clazz: String) =
-                    apply {
-                        val (schemaName, tableName, columnName) = sqlColumn.takeIfValidAbsoluteClazzName(size = 3)
-                            ?.split('.')
-                            ?: throw IllegalArgumentException("illegal column name '$sqlColumn', expected format <schema>.<table>.<name>")
-                        val column = SqlColumnName(
+                fun add(
+                    sqlColumn: String,
+                    clazz: String,
+                    parseFunction: String? = null,
+                ) {
+                    val (schemaName, tableName, columnName) = sqlColumn.takeIfValidAbsoluteClazzName(size = 3)
+                        ?.split('.')
+                        ?: throw IllegalArgumentException("illegal column name '$sqlColumn', expected format <schema>.<table>.<name>")
+                    val entity = TypeOverwrite(
+                        sqlColumn = SqlColumnName(
                             tableName = SqlObjectName(
                                 schema = SchemaName(dbName = dbName, schemaName = schemaName),
                                 name = tableName,
                             ),
                             name = columnName,
-                        )
-                        overwrites.add(TypeOverwrite(sqlColumn = column, clazz = clazz.toKotlinClassName()))
-                    }
+                        ),
+                        valueClass = KotlinValueClass(
+                            name = clazz.toKotlinClassName(),
+                            parseFunction = parseFunction?.takeIf(String::isNotBlank),
+                        ),
+                    )
+                    overwrites.add(entity)
+                }
 
                 fun build() = overwrites.toSet()
             }

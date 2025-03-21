@@ -83,25 +83,53 @@ data class Table(
                     override val sqlType get() = ""
                 }
 
+                sealed interface DomainType : NonPrimitive {
+                    context(CodeGenContext)
+                    fun getDomainTypename(): TypeName
+
+                    context(CodeGenContext)
+                    fun getValueClass(): KotlinValueClass
+
+                    val originalType: Type
+
+                    context(CodeGenContext)
+                    val parserFunction: String
+                        get() = getValueClass().parseFunction?.let { ".$it" } ?: ""
+                }
+
                 @Serializable
                 @SerialName("domain")
                 data class Domain(
                     override val name: SqlObjectName,
-                    val originalType: Type
-                ) : SqlObject, NonPrimitive {
+                    override val originalType: Type
+                ) : SqlObject, DomainType {
                     override val sqlType get() = "${name.schema.schemaName}.${name.name}"
 
                     context(CodeGenContext)
-                    fun getDomainTypename(): TypeName = typeMappings[name]?.poet ?: name.typeName
+                    override fun getDomainTypename(): TypeName = typeMappings[name]?.name?.poet ?: name.typeName
+
+                    context(CodeGenContext)
+                    override fun getValueClass(): KotlinValueClass = typeMappings[name] ?: KotlinValueClass(
+                        name = KotlinClassName(
+                            packageName = name.packageName.name,
+                            className = name.prettyName
+                        ),
+                        parseFunction = null,
+                    )
                 }
 
                 @Serializable
                 @SerialName("reference")
                 data class Reference(
-                    val clazz: KotlinClassName,
-                    val originalType: Type,
-                ) : NonPrimitive {
+                    private val valueClass: KotlinValueClass,
+                    override val originalType: Type,
+                ) : DomainType {
                     override val sqlType: String get() = originalType.sqlType
+                    context(CodeGenContext)
+                    override fun getDomainTypename(): TypeName = valueClass.name.poet
+
+                    context(CodeGenContext)
+                    override fun getValueClass(): KotlinValueClass = valueClass
                 }
             }
 
