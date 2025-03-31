@@ -34,7 +34,7 @@ inline fun <reified T> getPgEnumByLabel(label: String): T
 
 fun <T> getPgEnumByLabel(clazz: KClass<T>, label: String): T
         where T : Enum<T>,
-              T : io.github.klahap.pgen_test.db.column_type.PgEnum {
+              T : PgEnum {
     return clazz.java.enumConstants.singleOrNull { e -> e.pgEnumLabel == label }
         ?: error("enum with label '$label' not found in '${clazz.qualifiedName}'")
 }

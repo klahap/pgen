@@ -7,7 +7,7 @@ import java.util.UUID
 value class PgStructField(val data: String?) {
     companion object {
         private val SPLIT_REGEX = Regex(""",(?![^"]*"(?:(?:[^"]*"){2})*[^"]*$)""")
-        fun parseFields(data: String): List<io.github.klahap.pgen_test.db.column_type.PgStructField> {
+        fun parseFields(data: String): List<PgStructField> {
             return data.trim('(', ')').split(SPLIT_REGEX).map(::PgStructField)
         }
     }
@@ -54,11 +54,11 @@ interface PgStructFieldConverter<T> {
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    object ByteArray : io.github.klahap.pgen_test.db.column_type.PgStructFieldConverter<kotlin.ByteArray> {
+    object ByteArray : PgStructFieldConverter<kotlin.ByteArray> {
         override fun serialize(obj: kotlin.ByteArray?) = obj?.toHexString()
             ?.let { "\\x$it".escapeString() }.let(::PgStructField)
 
-        override fun deserialize(obj: io.github.klahap.pgen_test.db.column_type.PgStructField): kotlin.ByteArray? =
+        override fun deserialize(obj: PgStructField): kotlin.ByteArray? =
             obj.data?.unescapeString()?.removePrefix("\\x")?.hexToByteArray()
     }
 
