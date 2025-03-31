@@ -31,6 +31,11 @@ fun buildClass(
     block: TypeSpec.Builder.() -> Unit,
 ) = TypeSpec.classBuilder(name).apply(block).build()
 
+fun buildDataClass(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = TypeSpec.classBuilder(name).apply { addModifiers(KModifier.DATA) }.apply(block).build()
+
 fun buildValueClass(
     name: String,
     block: TypeSpec.Builder.() -> Unit,

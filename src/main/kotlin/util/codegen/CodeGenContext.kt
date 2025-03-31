@@ -2,6 +2,7 @@ package io.github.klahap.pgen.util.codegen
 
 import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.dsl.PackageName
+import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.KotlinValueClass
 import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
@@ -32,12 +33,12 @@ class CodeGenContext(
     fun Table.update(): Table {
         val newColumns = columns.map { column ->
             val columnName = SqlColumnName(tableName = name, name = column.name.value)
-            if (column.type is Table.Column.Type.NonPrimitive.Reference) return@map column
+            if (column.type is Column.Type.NonPrimitive.Reference) return@map column
             val kotlinClass = allTypeOverwrites[columnName] ?: return@map column
-            val newType = Table.Column.Type.NonPrimitive.Reference(
+            val newType = Column.Type.NonPrimitive.Reference(
                 valueClass = kotlinClass,
-                originalType = when(val t = column.type) {
-                    is Table.Column.Type.NonPrimitive.Domain -> t.originalType
+                originalType = when (val t = column.type) {
+                    is Column.Type.NonPrimitive.Domain -> t.originalType
                     else -> t
                 },
             )
@@ -68,6 +69,12 @@ class CodeGenContext(
         get() = ClassName(packageCustomColumn.name, "Int8MultiRangeColumnType")
     val typeNameUnconstrainedNumericColumnType
         get() = ClassName(packageCustomColumn.name, "UnconstrainedNumericColumnType")
+    val pgStructFieldConverter
+        get() = ClassName(packageCustomColumn.name, "PgStructFieldConverter")
+    val pgStructField
+        get() = ClassName(packageCustomColumn.name, "PgStructField")
+    val pgStructFieldJoin
+        get() = ClassName(packageCustomColumn.name, "join")
 
     val typeNamePgEnum get() = ClassName(packageCustomColumn.name, "PgEnum")
     val typeNameGetPgEnumByLabel get() = ClassName(packageCustomColumn.name, "getPgEnumByLabel")

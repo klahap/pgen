@@ -11,8 +11,8 @@ data class Statement(
     val name: SqlStatementName,
     val cardinality: Cardinality,
     val variables: List<VariableName>,
-    val variableTypes: Map<VariableName, Table.Column.Type>,
-    val columns: List<Table.Column>,
+    val variableTypes: Map<VariableName, Column.Type>,
+    val columns: List<Column>,
     val sql: String,
 ) {
     @JvmInline

@@ -22,17 +22,16 @@ value class DbName(val name: String) : Comparable<DbName> {
 }
 
 data class SchemaName(val dbName: DbName, val schemaName: String) : Comparable<SchemaName> {
-    override fun toString(): String {
-        return super.toString()
-    }
+    override fun toString() = "$dbName->$schemaName"
 
     override fun compareTo(other: SchemaName) =
         dbName.compareTo(other.dbName).takeIf { it != 0 }
             ?: schemaName.compareTo(other.schemaName)
 }
 
-sealed interface SqlObject {
+sealed interface SqlObject: Comparable<SqlObject> {
     val name: SqlObjectName
+    override fun compareTo(other: SqlObject) = name.compareTo(other.name)
 }
 
 @Serializable(with = SqlStatementNameSerializer::class)

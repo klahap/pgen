@@ -9,7 +9,8 @@ import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.SqlObject
 import io.github.klahap.pgen.model.sql.Statement
 import io.github.klahap.pgen.model.sql.Table
-import io.github.klahap.pgen.model.sql.Table.Column.Type.NonPrimitive.Domain
+import io.github.klahap.pgen.model.sql.Column.Type.NonPrimitive.Domain
+import io.github.klahap.pgen.model.sql.CompositeType
 import io.github.klahap.pgen.service.DirectorySyncService
 import io.github.klahap.pgen.util.DefaultCodeFile
 import java.time.OffsetDateTime
@@ -43,6 +44,8 @@ object Poet {
     val generateChannelFlow = ClassName("kotlinx.coroutines.flow", "channelFlow")
     val trySendBlocking = ClassName("kotlinx.coroutines.channels", "trySendBlocking")
     val transaction = ClassName("org.jetbrains.exposed.sql", "Transaction")
+
+    val PGobject = ClassName("org.postgresql.util", "PGobject")
 }
 
 context(CodeGenContext)
@@ -50,6 +53,7 @@ fun SqlObject.toTypeSpec() = when (this) {
     is Enum -> toTypeSpecInternal()
     is Table -> toTypeSpecInternal()
     is Domain -> toTypeSpecInternal()
+    is CompositeType -> toTypeSpecInternal()
 }
 
 context(CodeGenContext)

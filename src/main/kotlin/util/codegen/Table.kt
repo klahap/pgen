@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.dsl.addInitializerBlock
 import io.github.klahap.pgen.dsl.addProperty
 import io.github.klahap.pgen.dsl.buildObject
+import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.util.makeDifferent
 
@@ -25,7 +26,7 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
             name = column.prettyName,
             type = Poet.column.parameterizedBy(
                 when (column.type) {
-                    is Table.Column.Type.NonPrimitive.Array -> List::class.asTypeName()
+                    is Column.Type.NonPrimitive.Array -> List::class.asTypeName()
                         .parameterizedBy(column.type.getTypeName())
 
                     else -> column.type.getTypeName()

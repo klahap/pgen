@@ -2,14 +2,13 @@ package io.github.klahap.pgen.service
 
 import io.github.klahap.pgen.dsl.execute
 import io.github.klahap.pgen.dsl.executeQuery
-import io.github.klahap.pgen.model.*
 import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.config.SqlObjectFilter
 import io.github.klahap.pgen.model.sql.*
 import io.github.klahap.pgen.model.sql.Enum
-import io.github.klahap.pgen.model.sql.Table.Column.Type
-import io.github.klahap.pgen.model.sql.Table.Column.Type.*
-import io.github.klahap.pgen.model.sql.Table.Column.Type.NonPrimitive.Domain
+import io.github.klahap.pgen.model.sql.Column.Type
+import io.github.klahap.pgen.model.sql.Column.Type.*
+import io.github.klahap.pgen.model.sql.Column.Type.NonPrimitive.Domain
 import org.postgresql.util.PGobject
 import java.io.Closeable
 import java.sql.DriverManager
@@ -109,19 +108,20 @@ class DbService(
         columnTypeCategoryOverride: String? = null,
     ): Type {
         val schema = dbName.toSchema(getString("column_type_schema")!!)
-        val columnName = udtNameOverride ?: getString("column_type_name")!!
+        val columnTypeName = udtNameOverride ?: getString("column_type_name")!!
         val columnTypeCategory = columnTypeCategoryOverride ?: getString("column_type_category")!!
-        if (columnName.startsWith("_")) return NonPrimitive.Array(
+        if (columnTypeName.startsWith("_")) return NonPrimitive.Array(
             getColumnType(
-                udtNameOverride = columnName.removePrefix("_"),
-                columnTypeCategoryOverride = getString("column_element_type_category")!!
+                udtNameOverride = columnTypeName.removePrefix("_"),
+                columnTypeCategoryOverride = getString("column_element_type_category")!!,
             )
         )
         if (schema != dbName.schemaPgCatalog) return when (columnTypeCategory) {
-            "E" -> NonPrimitive.Enum(SqlObjectName(schema = schema, name = columnName))
-            else -> error("Unknown column type '$columnTypeCategory' for column_type column type '$schema:$columnName'")
+            "E" -> NonPrimitive.Enum(SqlObjectName(schema = schema, name = columnTypeName))
+            "C" -> NonPrimitive.Composite(SqlObjectName(schema = schema, name = columnTypeName))
+            else -> error("Unknown column type '$columnTypeCategory' for column_type column type '$schema:$columnTypeName'")
         }
-        return when (columnName) {
+        return when (columnTypeName) {
             "numeric" -> {
                 val precision = getInt("numeric_precision").takeIf { !wasNull() }
                 val scale = getInt("numeric_scale").takeIf { !wasNull() }
@@ -133,11 +133,11 @@ class DbService(
                     error("invalid numeric type, precision: $precision, scale: $scale")
             }
 
-            else -> getPrimitiveType(columnName)
+            else -> getPrimitiveType(columnTypeName)
         }
     }
 
-    private fun getColumns(filter: SqlObjectFilter): Map<SqlObjectName, List<Table.Column>> {
+    private fun getColumns(filter: SqlObjectFilter): Map<SqlObjectName, List<Column>> {
         if (filter.isEmpty()) return emptyMap()
         return connection.executeQuery(
             """
@@ -167,38 +167,61 @@ class DbService(
                     AND tye.oid = ty.typelem
             WHERE ${filter.toFilterString(schemaField = "c.table_schema", tableField = "c.table_name")};
             """
-        ) { resultSet ->
-            val tableName = SqlObjectName(
-                schema = dbName.toSchema(resultSet.getString("table_schema")!!),
-                name = resultSet.getString("table_name")!!,
-            )
+        ) { it.parseColumn() }.groupBy({ it.first }, { it.second })
+    }
 
-            val rawType = resultSet.getColumnType()
-            val type = run {
-                Domain(
-                    name = SqlObjectName(
-                        schema = SchemaName(
-                            dbName = dbName,
-                            schemaName = resultSet.getString("domain_schema") ?: return@run null,
-                        ),
-                        name = resultSet.getString("domain_name") ?: return@run null,
-                    ),
-                    originalType = rawType,
-                )
-            } ?: rawType
-
-            tableName to Table.Column(
-                pos = resultSet.getInt("pos"),
-                name = Table.ColumnName(resultSet.getString("column_name")!!),
-                type = type,
-                isNullable = resultSet.getBoolean("is_nullable"),
-                default = resultSet.getString("column_default")
-            )
-        }.groupBy({ it.first }, { it.second })
+    private fun getCompositeTypeFields(filter: SqlObjectFilter): Map<SqlObjectName, List<Column>> {
+        return connection.executeQuery(
+            """
+            SELECT a.attnum                                                              AS pos,
+                   clsn.nspname                                                          AS table_schema,
+                   cls.relname                                                           AS table_name,
+                   a.attname                                                             AS column_name,
+                   CASE
+                       WHEN at.typtype = 'd'::"char" THEN atn.nspname
+                       ELSE NULL::name
+                       END::information_schema.sql_identifier                            AS domain_schema,
+                   CASE
+                       WHEN at.typtype = 'd'::"char" THEN at.typname
+                       ELSE NULL::name
+                       END::information_schema.sql_identifier                            AS domain_name,
+                   true                                                                  AS is_nullable,
+                   COALESCE(nbt.nspname, atn.nspname)::information_schema.sql_identifier AS column_type_schema,
+                   COALESCE(bt.typname, at.typname)::information_schema.sql_identifier   AS column_type_name,
+                   information_schema._pg_numeric_precision(
+                           information_schema._pg_truetypid(a.*, at.*),
+                           information_schema._pg_truetypmod(a.*, at.*)
+                   )::information_schema.cardinal_number                                 AS numeric_precision,
+                   information_schema._pg_numeric_scale(
+                           information_schema._pg_truetypid(a.*, at.*),
+                           information_schema._pg_truetypmod(a.*, at.*)
+                   )::information_schema.cardinal_number                                 AS numeric_scale,
+                   NULL                                                                  AS column_default,
+                   at.typcategory                                                        AS column_type_category,
+                   ate.typcategory                                                       AS column_element_type_category
+            FROM pg_catalog.pg_type AS t
+                     JOIN pg_catalog.pg_class AS cls
+                          ON cls.oid = t.typrelid
+                     join pg_namespace as clsn
+                          on cls.relnamespace = clsn.oid
+                     JOIN pg_catalog.pg_attribute AS a
+                          ON a.attrelid = cls.oid AND a.attnum > 0 AND NOT a.attisdropped
+                     JOIN pg_catalog.pg_type AS at
+                          ON at.oid = a.atttypid
+                     LEFT JOIN pg_catalog.pg_type AS ate
+                               ON at.typelem != 0 AND ate.oid = at.typelem
+                     JOIN pg_catalog.pg_namespace AS atn
+                          ON atn.oid = at.typnamespace
+                     LEFT JOIN (pg_type bt JOIN pg_namespace nbt ON bt.typnamespace = nbt.oid)
+                          ON at.typtype = 'd'::"char" AND at.typbasetype = bt.oid
+            WHERE cls.relkind = 'c'
+              and ${filter.toFilterString(schemaField = "clsn.nspname", tableField = "cls.relname")};
+        """
+        ) { it.parseColumn() }.groupBy({ it.first }, { it.second })
     }
 
     private fun getPrimaryKeys(filter: SqlObjectFilter): Map<SqlObjectName, Table.PrimaryKey> {
-        data class PrimaryKeyColumn(val keyName: String, val columnName: Table.ColumnName, val idx: Int)
+        data class PrimaryKeyColumn(val keyName: String, val columnName: Column.Name, val idx: Int)
 
         if (filter.isEmpty()) return emptyMap()
         return connection.executeQuery(
@@ -223,7 +246,7 @@ class DbService(
             )
             table to PrimaryKeyColumn(
                 keyName = resultSet.getString("constraint_name")!!,
-                columnName = Table.ColumnName(resultSet.getString("column_name")!!),
+                columnName = Column.Name(resultSet.getString("column_name")!!),
                 idx = resultSet.getInt("ordinal_position")
             )
         }.groupBy({ it.first }, { it.second })
@@ -277,8 +300,8 @@ class DbService(
                 ),
             )
             val ref = Table.ForeignKey.KeyPair(
-                sourceColumn = Table.ColumnName(resultSet.getString("source_column")!!),
-                targetColumn = Table.ColumnName(resultSet.getString("target_column")!!),
+                sourceColumn = Column.Name(resultSet.getString("source_column")!!),
+                targetColumn = Column.Name(resultSet.getString("target_column")!!),
             )
             meta to ref
         }
@@ -291,6 +314,17 @@ class DbService(
                 )
                 meta.sourceTable to key
             }.groupBy({ it.first }, { it.second })
+    }
+
+    fun getCompositeTypes(compositeTypeNames: Set<SqlObjectName>): List<CompositeType> {
+        val filter = SqlObjectFilter.Objects(compositeTypeNames)
+        if (filter.isEmpty()) return emptyList()
+        return getCompositeTypeFields(filter).map { (tableName, columns) ->
+            CompositeType(
+                name = tableName,
+                columns = columns.sortedBy { it.pos },
+            )
+        }
     }
 
     fun getEnums(enumNames: Set<SqlObjectName>): List<Enum> {
@@ -335,6 +369,33 @@ class DbService(
         if (missingEnums.isNotEmpty())
             throw Exception("enums not found: $missingEnums")
         return enums
+    }
+
+    private fun ResultSet.parseColumn(): Pair<SqlObjectName, Column> {
+        val tableName = SqlObjectName(
+            schema = dbName.toSchema(getString("table_schema")!!),
+            name = getString("table_name")!!,
+        )
+        val rawType = getColumnType()
+        val type = run {
+            Domain(
+                name = SqlObjectName(
+                    schema = SchemaName(
+                        dbName = dbName,
+                        schemaName = getString("domain_schema") ?: return@run null,
+                    ),
+                    name = getString("domain_name") ?: return@run null,
+                ),
+                originalType = rawType,
+            )
+        } ?: rawType
+        return tableName to Column(
+            pos = getInt("pos"),
+            name = Column.Name(getString("column_name")!!),
+            type = type,
+            isNullable = getBoolean("is_nullable"),
+            default = getString("column_default")
+        )
     }
 
     override fun close() {

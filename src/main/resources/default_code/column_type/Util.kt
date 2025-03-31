@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.CustomEnumerationColumnType
 import org.jetbrains.exposed.sql.Table
 import org.postgresql.util.PGobject
 import kotlin.enums.enumEntries
+import kotlin.reflect.KClass
 
 fun <E> getArrayColumnType(columnType: ColumnType<E & Any>) =
     ArrayColumnType<E, List<E>>(delegate = columnType)
@@ -29,6 +30,13 @@ inline fun <reified T> getPgEnumByLabel(label: String): T
               T : PgEnum {
     return enumEntries<T>().singleOrNull { e -> e.pgEnumLabel == label }
         ?: error("enum with label '$label' not found in '${T::class.qualifiedName}'")
+}
+
+fun <T> getPgEnumByLabel(clazz: KClass<T>, label: String): T
+        where T : Enum<T>,
+              T : io.github.klahap.pgen_test.db.column_type.PgEnum {
+    return clazz.java.enumConstants.singleOrNull { e -> e.pgEnumLabel == label }
+        ?: error("enum with label '$label' not found in '${clazz.qualifiedName}'")
 }
 
 fun <T : Enum<T>> Table.customEnumerationArray(

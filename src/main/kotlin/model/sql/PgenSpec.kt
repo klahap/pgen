@@ -9,12 +9,13 @@ import kotlinx.serialization.Serializable
 data class PgenSpec(
     val tables: List<Table>,
     val enums: List<Enum>,
+    val compositeTypes: List<CompositeType>,
     val statements: List<Statement>,
     val typeMappings: List<TypeMapping>,
     val typeOverwrites: List<TypeOverwrite>,
 ) {
     val domains
         get() = tables
-            .flatMap { it.columns.map(Table.Column::type) }
-            .filterIsInstance<Table.Column.Type.NonPrimitive.Domain>()
+            .flatMap { it.columns.map(Column::type) }
+            .filterIsInstance<Column.Type.NonPrimitive.Domain>()
 }

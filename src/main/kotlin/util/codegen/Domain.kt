@@ -5,7 +5,7 @@ import io.github.klahap.pgen.dsl.addFunction
 import io.github.klahap.pgen.dsl.addProperty
 import io.github.klahap.pgen.dsl.buildValueClass
 import io.github.klahap.pgen.dsl.primaryConstructor
-import io.github.klahap.pgen.model.sql.Table.Column.Type.NonPrimitive.Domain
+import io.github.klahap.pgen.model.sql.Column.Type.NonPrimitive.Domain
 
 context(CodeGenContext)
 internal fun Domain.toTypeSpecInternal() = buildValueClass(this@toTypeSpecInternal.name.prettyName) {

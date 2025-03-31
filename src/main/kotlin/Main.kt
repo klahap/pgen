@@ -4,11 +4,10 @@ import com.charleskorn.kaml.PolymorphismStyle
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import io.github.klahap.pgen.model.config.Config.Companion.buildConfig
-import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.config.TypeMapping
 import io.github.klahap.pgen.model.config.TypeOverwrite
-import io.github.klahap.pgen.model.sql.Enum
+import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.PgenSpec
 import io.github.klahap.pgen.model.sql.Statement
 import io.github.klahap.pgen.service.DbService
@@ -41,13 +40,18 @@ private fun generateSpec(config: Config) {
         ).use { dbService ->
             val statements = dbService.getStatements(parseStatements(configDb.statementScripts))
             val tables = dbService.getTablesWithForeignTables(configDb.tableFilter)
-            val enumNames = tables.asSequence().flatMap { it.columns }.map { it.type }
-                .map { if (it is Table.Column.Type.NonPrimitive.Array) it.elementType else it }
-                .filterIsInstance<Table.Column.Type.NonPrimitive.Enum>().map { it.name }.toSet()
+            val allColumnTypes = tables.asSequence().flatMap { it.columns }.map { it.type }
+                .map { if (it is Column.Type.NonPrimitive.Array) it.elementType else it }.toSet()
+            val enumNames =
+                allColumnTypes.filterIsInstance<Column.Type.NonPrimitive.Enum>().map { it.name }.toSet()
+            val compositeTypeNames =
+                allColumnTypes.filterIsInstance<Column.Type.NonPrimitive.Composite>().map { it.name }.toSet()
             val enums = dbService.getEnums(enumNames)
+            val compositeTypes = dbService.getCompositeTypes(compositeTypeNames)
             PgenSpec(
                 tables = tables,
                 enums = enums,
+                compositeTypes = compositeTypes,
                 statements = statements,
                 typeMappings = configDb.typeMappings.toList(),
                 typeOverwrites = configDb.typeOverwrites.toList(),
@@ -55,8 +59,9 @@ private fun generateSpec(config: Config) {
         }
     }
     val spec = PgenSpec(
-        tables = specData.flatMap(PgenSpec::tables).sortedBy(Table::name),
-        enums = specData.flatMap(PgenSpec::enums).sortedBy(Enum::name),
+        tables = specData.flatMap(PgenSpec::tables).sorted(),
+        enums = specData.flatMap(PgenSpec::enums).sorted(),
+        compositeTypes = specData.flatMap(PgenSpec::compositeTypes).sorted(),
         statements = specData.flatMap(PgenSpec::statements).sortedBy(Statement::name),
         typeMappings = specData.flatMap(PgenSpec::typeMappings).sortedBy(TypeMapping::sqlType),
         typeOverwrites = specData.flatMap(PgenSpec::typeOverwrites).sortedBy(TypeOverwrite::sqlColumn),
@@ -78,6 +83,7 @@ private fun generateCode(config: Config) {
         directorySync(config.outputPath) {
             DefaultCodeFile.all().forEach { sync(it) }
             spec.enums.forEach { sync(it) }
+            spec.compositeTypes.forEach { sync(it) }
             spec.domains.filter { it.name !in typeMappings }.forEach { sync(it) }
             spec.tables.map { it.update() }.forEach { sync(it) }
             spec.statements.groupBy { it.name.dbName }.values.forEach { sync(it) }

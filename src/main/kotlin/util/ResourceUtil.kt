@@ -22,6 +22,7 @@ data class DefaultCodeFile(
             DefaultCodeFile(listOf("column_type"), "IntRange.kt"),
             DefaultCodeFile(listOf("column_type"), "MultiRange.kt"),
             DefaultCodeFile(listOf("column_type"), "MultiRangeColumnType.kt"),
+            DefaultCodeFile(listOf("column_type"), "PgStructUtil.kt"),
             DefaultCodeFile(listOf("column_type"), "RangeColumnType.kt"),
             DefaultCodeFile(listOf("column_type"), "UnconstrainedNumericColumnType.kt"),
             DefaultCodeFile(listOf("column_type"), "Util.kt"),

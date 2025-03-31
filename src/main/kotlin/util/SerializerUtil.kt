@@ -9,7 +9,7 @@ import io.github.klahap.pgen.model.sql.SchemaName
 import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
 import io.github.klahap.pgen.model.sql.SqlStatementName
-import io.github.klahap.pgen.model.sql.Table
+import io.github.klahap.pgen.model.sql.Column
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -19,37 +19,37 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
-object ColumnTypeSerializer : KSerializer<Table.Column.Type> {
+object ColumnTypeSerializer : KSerializer<Column.Type> {
     @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
     override val descriptor: SerialDescriptor = buildSerialDescriptor(
         ColumnTypeSerializer::class.java.name,
         SerialKind.CONTEXTUAL
     ) {
         element<String>("primitive")
-        element<Table.Column.Type.NonPrimitive>("nonPrimitive")
+        element<Column.Type.NonPrimitive>("nonPrimitive")
     }
 
-    override fun serialize(encoder: Encoder, value: Table.Column.Type) {
+    override fun serialize(encoder: Encoder, value: Column.Type) {
         when (value) {
-            is Table.Column.Type.Primitive ->
-                encoder.encodeSerializableValue(Table.Column.Type.Primitive.serializer(), value)
+            is Column.Type.Primitive ->
+                encoder.encodeSerializableValue(Column.Type.Primitive.serializer(), value)
 
-            is Table.Column.Type.NonPrimitive ->
-                encoder.encodeSerializableValue(Table.Column.Type.NonPrimitive.serializer(), value)
+            is Column.Type.NonPrimitive ->
+                encoder.encodeSerializableValue(Column.Type.NonPrimitive.serializer(), value)
         }
     }
 
-    override fun deserialize(decoder: Decoder): Table.Column.Type = when (decoder) {
+    override fun deserialize(decoder: Decoder): Column.Type = when (decoder) {
         is JsonDecoder -> when (val node = decoder.decodeJsonElement()) {
-            is JsonPrimitive -> Table.Column.Type.Primitive.valueOf(node.content)
-            is JsonObject -> decoder.json.decodeFromJsonElement<Table.Column.Type.NonPrimitive>(node)
+            is JsonPrimitive -> Column.Type.Primitive.valueOf(node.content)
+            is JsonObject -> decoder.json.decodeFromJsonElement<Column.Type.NonPrimitive>(node)
             else -> throw SerializationException("Invalid JSON for Column.Type")
         }
 
         is YamlInput -> {
             when (val node = decoder.node) {
-                is YamlScalar -> Table.Column.Type.Primitive.valueOf(node.content)
-                is YamlMap -> decoder.decodeSerializableValue(Table.Column.Type.NonPrimitive.serializer())
+                is YamlScalar -> Column.Type.Primitive.valueOf(node.content)
+                is YamlMap -> decoder.decodeSerializableValue(Column.Type.NonPrimitive.serializer())
                 else -> throw SerializationException("Invalid YAML for Column.Type")
             }
         }
