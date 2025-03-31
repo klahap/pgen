@@ -92,6 +92,8 @@ context(CodeGenContext)
 private fun CodeBlock.Builder.addPgFieldConverter(type: Column.Type) = when (type) {
     Column.Type.Primitive.BOOL,
     Column.Type.Primitive.DATE,
+    Column.Type.Primitive.FLOAT4,
+    Column.Type.Primitive.FLOAT8,
     Column.Type.Primitive.INT4RANGE,
     Column.Type.Primitive.INT8RANGE,
     Column.Type.Primitive.INT4MULTIRANGE,

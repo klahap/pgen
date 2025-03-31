@@ -144,6 +144,8 @@ data class Column(
             INT2("int2"),
             INT4("int4"),
             INT8("int8"),
+            FLOAT4("float4"),
+            FLOAT8("float8"),
             INT4RANGE("int4range"),
             INT8RANGE("int8range"),
             INT4MULTIRANGE("int4multirange"),

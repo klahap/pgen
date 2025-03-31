@@ -138,6 +138,8 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         )
 
         Column.Type.Primitive.INT4 -> initializer("integer(name = %S)$postfix", columnName, *postArgs)
+        Column.Type.Primitive.FLOAT4 -> initializer("float(name = %S)$postfix", columnName, *postArgs)
+        Column.Type.Primitive.FLOAT8 -> initializer("double(name = %S)$postfix", columnName, *postArgs)
         Column.Type.Primitive.JSON -> initializer(
             "%T<%T>(name = %S, serialize = %T)$postfix",
             Poet.jsonColumn, Poet.jsonElement, columnName, Poet.json, *postArgs

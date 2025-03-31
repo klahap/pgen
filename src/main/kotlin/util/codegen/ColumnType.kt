@@ -33,6 +33,8 @@ fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (th
     Column.Type.Primitive.INT4MULTIRANGE -> typeNameMultiRange.parameterizedBy(Int::class.asTypeName())
     Column.Type.Primitive.INT8MULTIRANGE -> typeNameMultiRange.parameterizedBy(Long::class.asTypeName())
     Column.Type.Primitive.INT4 -> Int::class.asTypeName()
+    Column.Type.Primitive.FLOAT4 -> Float::class.asTypeName()
+    Column.Type.Primitive.FLOAT8 -> Double::class.asTypeName()
     Column.Type.Primitive.JSON -> Poet.jsonElement
     Column.Type.Primitive.JSONB -> Poet.jsonElement
     Column.Type.Primitive.INT2 -> Short::class.asTypeName()
@@ -84,6 +86,8 @@ fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     Column.Type.Primitive.INT4MULTIRANGE -> codeBlock("%T()", typeNameInt4MultiRangeColumnType)
     Column.Type.Primitive.INT8MULTIRANGE -> codeBlock("%T()", typeNameInt8MultiRangeColumnType)
     Column.Type.Primitive.INT4 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "IntegerColumnType"))
+    Column.Type.Primitive.FLOAT4 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "FloatColumnType"))
+    Column.Type.Primitive.FLOAT8 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "DoubleColumnType"))
     Column.Type.Primitive.JSON -> codeBlock("%T()", defaultJsonColumnType)
     Column.Type.Primitive.JSONB -> codeBlock("%T()", defaultJsonColumnType)
     Column.Type.Primitive.INT2 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "ShortColumnType"))
