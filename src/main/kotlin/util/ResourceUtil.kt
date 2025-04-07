@@ -27,6 +27,7 @@ data class DefaultCodeFile(
             DefaultCodeFile(listOf("column_type"), "UnconstrainedNumericColumnType.kt"),
             DefaultCodeFile(listOf("column_type"), "Util.kt"),
             DefaultCodeFile(listOf("util"), "BatchUpdateStatementDsl.kt"),
+            DefaultCodeFile(listOf("util"), "DbDsl.kt"),
         )
     }
 }
