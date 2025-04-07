@@ -13,5 +13,5 @@ fun <T> Database.transaction(block: Transaction.() -> T) =
 suspend fun <T> Database.suspendTransaction(
     context: CoroutineContext = Dispatchers.IO,
     readOnly: Boolean = false,
-    block: Transaction.() -> T,
+    block: suspend Transaction.() -> T,
 ) = newSuspendedTransaction(context, db = this, readOnly = readOnly) { block() }
