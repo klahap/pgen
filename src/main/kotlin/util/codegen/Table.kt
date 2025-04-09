@@ -2,14 +2,16 @@ package io.github.klahap.pgen.util.codegen
 
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.asTypeName
+import io.github.klahap.pgen.dsl.addCode
+import io.github.klahap.pgen.dsl.addCompanionObject
+import io.github.klahap.pgen.dsl.addFunction
 import io.github.klahap.pgen.dsl.addInitializerBlock
 import io.github.klahap.pgen.dsl.addProperty
+import io.github.klahap.pgen.dsl.buildDataClass
 import io.github.klahap.pgen.dsl.buildObject
-import io.github.klahap.pgen.model.sql.Column
+import io.github.klahap.pgen.dsl.primaryConstructor
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.util.makeDifferent
-
 
 context(CodeGenContext)
 internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.name.prettyName) {
@@ -24,14 +26,7 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
     this@toTypeSpecInternal.columns.forEach { column ->
         addProperty(
             name = column.prettyName,
-            type = Poet.column.parameterizedBy(
-                when (column.type) {
-                    is Column.Type.NonPrimitive.Array -> List::class.asTypeName()
-                        .parameterizedBy(column.type.getTypeName())
-
-                    else -> column.type.getTypeName()
-                }.copy(nullable = column.isNullable),
-            ),
+            type = Poet.column.parameterizedBy(column.getColumnTypeName()),
         ) {
             val postArgs = mutableListOf<Any>()
             val postfix = buildString {
@@ -71,4 +66,38 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
                 addStatement("foreignKey($foreignKeyStrFormat)", *foreignKeyStrValues)
             }
         }
+
+    addType(toTypeSpecEntity())
+}
+
+
+context(CodeGenContext)
+private fun Table.toTypeSpecEntity() = buildDataClass(this@toTypeSpecEntity.entityTypeName.simpleName) {
+    primaryConstructor {
+        this@toTypeSpecEntity.columns.forEach { column ->
+            val type = column.getColumnTypeName()
+            addParameter(column.prettyName, type)
+            addProperty(name = column.prettyName, type = type) {
+                initializer(column.prettyName)
+            }
+        }
+    }
+    addCompanionObject {
+        addFunction("create") {
+            addParameter(name = "row", type = Poet.resultRow)
+            returns(this@toTypeSpecEntity.entityTypeName)
+            addCode {
+                add("return %T(\n", this@toTypeSpecEntity.entityTypeName)
+                this@toTypeSpecEntity.columns.forEach { column ->
+                    add(
+                        "  %L = row[%T.%L],\n",
+                        column.prettyName,
+                        this@toTypeSpecEntity.name.typeName,
+                        column.prettyName,
+                    )
+                }
+                add(")")
+            }
+        }
+    }
 }

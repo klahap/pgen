@@ -1,5 +1,7 @@
 package io.github.klahap.pgen.model.sql
 
+import com.squareup.kotlinpoet.ClassName
+import io.github.klahap.pgen.util.codegen.CodeGenContext
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,6 +11,9 @@ data class Table(
     val primaryKey: PrimaryKey?,
     val foreignKeys: List<ForeignKey>,
 ) : SqlObject {
+    context(CodeGenContext)
+    val entityTypeName
+        get() = ClassName("${name.packageName.name}.${name.prettyName}", "Entity")
 
     @Serializable
     data class PrimaryKey(val keyName: String, val columnNames: List<Column.Name>)

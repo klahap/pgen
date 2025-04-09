@@ -24,6 +24,7 @@ object Poet {
     val timestamp = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "timestamp")
     val timestampWithTimeZone = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "timestampWithTimeZone")
     val jsonColumn = ClassName("org.jetbrains.exposed.sql.json", "json")
+    val resultRow = ClassName("org.jetbrains.exposed.sql", "ResultRow")
 
     val json = ClassName("kotlinx.serialization.json", "Json")
     val jsonElement = ClassName("kotlinx.serialization.json", "JsonElement")
@@ -49,7 +50,7 @@ object Poet {
 }
 
 context(CodeGenContext)
-fun SqlObject.toTypeSpec() = when (this) {
+private fun SqlObject.toTypeSpec() = when (this) {
     is Enum -> toTypeSpecInternal()
     is Table -> toTypeSpecInternal()
     is Domain -> toTypeSpecInternal()
@@ -58,7 +59,8 @@ fun SqlObject.toTypeSpec() = when (this) {
 
 context(CodeGenContext)
 fun FileSpec.Builder.add(obj: SqlObject) {
-    addType(obj.toTypeSpec())
+    val spec = obj.toTypeSpec()
+    addType(spec)
 }
 
 context(CodeGenContext)

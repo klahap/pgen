@@ -1,6 +1,8 @@
 package io.github.klahap.pgen.util.codegen
 
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.model.sql.Column
 
 
@@ -177,3 +179,11 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         )
     }
 }
+
+context(CodeGenContext)
+internal fun Column.getColumnTypeName() = when (type) {
+    is Column.Type.NonPrimitive.Array -> List::class.asTypeName()
+        .parameterizedBy(type.getTypeName())
+
+    else -> type.getTypeName()
+}.copy(nullable = isNullable)

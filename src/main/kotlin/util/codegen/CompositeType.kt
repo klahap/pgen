@@ -19,12 +19,7 @@ context(CodeGenContext)
 internal fun CompositeType.toTypeSpecInternal() = buildDataClass(this@toTypeSpecInternal.name.prettyName) {
     primaryConstructor {
         this@toTypeSpecInternal.columns.forEach { column ->
-            val type = when (column.type) {
-                is Column.Type.NonPrimitive.Array -> List::class.asTypeName()
-                    .parameterizedBy(column.type.getTypeName())
-
-                else -> column.type.getTypeName()
-            }.copy(nullable = column.isNullable)
+            val type = column.getColumnTypeName()
             addParameter(column.prettyName, type)
             addProperty(name = column.prettyName, type = type) {
                 initializer(column.prettyName)
