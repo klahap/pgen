@@ -17,6 +17,7 @@ class CodeGenContext(
 ) {
     val allTypeOverwrites: Map<SqlColumnName, KotlinValueClass>
     private val packageCustomColumn = PackageName("$rootPackageName.column_type")
+    private val packageUtil = PackageName("$rootPackageName.util")
 
     init {
         allTypeOverwrites = typeOverwrites.entries.flatMap { (column, clazz) ->
@@ -75,6 +76,8 @@ class CodeGenContext(
         get() = ClassName(packageCustomColumn.name, "PgStructField")
     val pgStructFieldJoin
         get() = ClassName(packageCustomColumn.name, "join")
+    val getColumnWithAlias
+        get() = ClassName(packageUtil.name, "get")
 
     val typeNamePgEnum get() = ClassName(packageCustomColumn.name, "PgEnum")
     val typeNameGetPgEnumByLabel get() = ClassName(packageCustomColumn.name, "getPgEnumByLabel")

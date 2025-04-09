@@ -2,10 +2,12 @@ package io.github.klahap.pgen.util.codegen
 
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import io.github.klahap.pgen.dsl.addCode
 import io.github.klahap.pgen.dsl.addCompanionObject
 import io.github.klahap.pgen.dsl.addFunction
 import io.github.klahap.pgen.dsl.addInitializerBlock
+import io.github.klahap.pgen.dsl.addParameter
 import io.github.klahap.pgen.dsl.addProperty
 import io.github.klahap.pgen.dsl.buildDataClass
 import io.github.klahap.pgen.dsl.buildObject
@@ -85,13 +87,17 @@ private fun Table.toTypeSpecEntity() = buildDataClass(this@toTypeSpecEntity.enti
     addCompanionObject {
         addFunction("create") {
             addParameter(name = "row", type = Poet.resultRow)
+            addParameter(name = "alias", type = Poet.alias.parameterizedBy(STAR).copy(nullable = true)) {
+                this.defaultValue("null")
+            }
             returns(this@toTypeSpecEntity.entityTypeName)
             addCode {
                 add("return %T(\n", this@toTypeSpecEntity.entityTypeName)
                 this@toTypeSpecEntity.columns.forEach { column ->
                     add(
-                        "  %L = row[%T.%L],\n",
+                        "  %L = row.%T(%T.%L, alias),\n",
                         column.prettyName,
+                        getColumnWithAlias,
                         this@toTypeSpecEntity.name.typeName,
                         column.prettyName,
                     )
