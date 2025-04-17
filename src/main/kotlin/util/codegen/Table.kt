@@ -3,6 +3,7 @@ package io.github.klahap.pgen.util.codegen
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
+import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.dsl.addCode
 import io.github.klahap.pgen.dsl.addCompanionObject
 import io.github.klahap.pgen.dsl.addFunction
@@ -103,6 +104,21 @@ private fun Table.toTypeSpecEntity() = buildDataClass(this@toTypeSpecEntity.enti
                     )
                 }
                 add(")")
+            }
+        }
+
+        addFunction("set") {
+            receiver(Poet.updateBuilder.parameterizedBy(Int::class.asTypeName()))
+            addParameter(name = "entity", type = this@toTypeSpecEntity.entityTypeName)
+            addCode {
+                this@toTypeSpecEntity.columns.forEach { column ->
+                    add(
+                        "set(%T.%L, entity.%L)\n",
+                        this@toTypeSpecEntity.name.typeName,
+                        column.prettyName,
+                        column.prettyName,
+                    )
+                }
             }
         }
     }

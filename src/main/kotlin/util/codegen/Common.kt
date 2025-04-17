@@ -26,6 +26,7 @@ object Poet {
     val jsonColumn = ClassName("org.jetbrains.exposed.sql.json", "json")
     val resultRow = ClassName("org.jetbrains.exposed.sql", "ResultRow")
     val alias = ClassName("org.jetbrains.exposed.sql", "Alias")
+    val updateBuilder = ClassName("org.jetbrains.exposed.sql.statements", "UpdateBuilder")
 
     val json = ClassName("kotlinx.serialization.json", "Json")
     val jsonElement = ClassName("kotlinx.serialization.json", "JsonElement")
