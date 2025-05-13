@@ -2,6 +2,9 @@ package default_code.util
 
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.compoundAnd
+import org.jetbrains.exposed.sql.compoundOr
 import org.jetbrains.exposed.sql.Alias
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ResultRow
@@ -19,7 +22,10 @@ suspend fun <T> Database.suspendTransaction(
     block: suspend Transaction.() -> T,
 ) = newSuspendedTransaction(context, db = this, readOnly = readOnly) { block() }
 
-operator fun <T> ResultRow.get(column: Column<T>, alias: Alias<*>?): T = when(alias) {
+operator fun <T> ResultRow.get(column: Column<T>, alias: Alias<*>?): T = when (alias) {
     null -> this[column]
     else -> this[alias[column]]
 }
+
+fun compoundAnd(con: Op<Boolean>, vararg cons: Op<Boolean>): Op<Boolean> = (listOf(con) + cons).compoundAnd()
+fun compoundOr(con: Op<Boolean>, vararg cons: Op<Boolean>): Op<Boolean> = (listOf(con) + cons).compoundOr()
