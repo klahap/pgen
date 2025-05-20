@@ -3,6 +3,7 @@ package default_code.util
 import io.r2dbc.spi.IsolationLevel
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.R2dbcTransaction
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction as r2dbcSuspendTransaction
@@ -49,4 +50,13 @@ suspend fun <T> R2dbcDatabase.suspendTransactionAsync(
         readOnly = readOnly,
         statement = statement,
     )
+}
+
+fun <T> R2dbcDatabase.blockingTransaction(
+    context: CoroutineContext = Dispatchers.IO,
+    readOnly: Boolean = false,
+    block: suspend R2dbcTransaction.() -> T,
+) = runBlocking(context) {
+    val result = suspendTransaction(context = context, readOnly = readOnly, statement = block)
+    result
 }
