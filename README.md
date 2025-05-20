@@ -83,7 +83,7 @@ The plugin will generate a Kotlin Exposed DSL table:
 ```kotlin
 package io.example.db
 
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.Table
 
 enum class Status(
     override val pgEnumLabel: String,

@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.*
 value class PackageName(val name: String) {
     override fun toString(): String = name
     operator fun plus(subPackage: String) = PackageName("$name.$subPackage")
+    fun className(vararg name: String) = ClassName(this.name, *name)
 }
 
 fun fileSpec(

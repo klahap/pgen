@@ -16,7 +16,12 @@ data class Config(
     val outputPath: Path,
     val specFilePath: Path,
     val createDirectoriesForRootPackageName: Boolean,
+    val connectionType: ConnectionType,
 ) {
+    enum class ConnectionType {
+        JDBC, R2DBC
+    }
+
     data class Db(
         val dbName: DbName,
         val connectionConfig: DbConnectionConfig?,
@@ -180,7 +185,9 @@ data class Config(
         private var outputPath: Path? = null
         private var specFilePath: Path? = null
         private var createDirectoriesForRootPackageName: Boolean = true
+        private var connectionType: ConnectionType = ConnectionType.JDBC
 
+        fun connectionType(type: ConnectionType) = apply { connectionType = type }
         fun packageName(name: String) = apply { packageName = name }
         fun outputPath(path: String) = apply { outputPath = Path(path) }
         fun outputPath(path: Path) = apply { outputPath = path }
@@ -204,6 +211,7 @@ data class Config(
             outputPath = outputPath ?: error("no output path defined"),
             specFilePath = specFilePath ?: error("no path pgen spec file defined"),
             createDirectoriesForRootPackageName = createDirectoriesForRootPackageName,
+            connectionType = connectionType,
         )
     }
 

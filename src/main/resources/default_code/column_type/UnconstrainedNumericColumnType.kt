@@ -1,15 +1,15 @@
 package default_code.column_type
 
-import org.jetbrains.exposed.sql.ColumnType
+import org.jetbrains.exposed.v1.core.ColumnType
+import org.jetbrains.exposed.v1.core.statements.api.RowApi
 import java.math.BigDecimal
-import java.sql.ResultSet
 import java.sql.SQLException
 
 
 class UnconstrainedNumericColumnType : ColumnType<BigDecimal>() {
     override fun sqlType(): String = "NUMERIC"
 
-    override fun readObject(rs: ResultSet, index: Int): Any? {
+    override fun readObject(rs: RowApi, index: Int): Any? {
         return rs.getObject(index)
     }
 

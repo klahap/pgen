@@ -1,7 +1,7 @@
 package default_code.column_type
 
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.Table
 
 
 class Int4RangeColumnType : RangeColumnType<Int, IntRange>() {

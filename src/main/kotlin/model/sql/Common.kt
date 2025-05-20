@@ -45,7 +45,7 @@ data class SqlStatementName(
 
     context(CodeGenContext)
     val packageName
-        get() = PackageName("$rootPackageName.db.${dbName}")
+        get() = PackageName("${poet.rootPackageName}.db.${dbName}")
 
     context(CodeGenContext)
     val typeName
@@ -66,7 +66,7 @@ data class SqlObjectName(
 
     context(CodeGenContext)
     val packageName
-        get() = PackageName("$rootPackageName.db.${schema.dbName}.${schema.schemaName.makeDifferent(kotlinKeywords)}")
+        get() = PackageName("${poet.rootPackageName}.db.${schema.dbName}.${schema.schemaName.makeDifferent(kotlinKeywords)}")
 
     context(CodeGenContext)
     val typeName

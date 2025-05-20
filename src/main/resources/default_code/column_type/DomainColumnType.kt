@@ -1,6 +1,6 @@
 package default_code.column_type
 
-import org.jetbrains.exposed.sql.ColumnType
+import org.jetbrains.exposed.v1.core.ColumnType
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties

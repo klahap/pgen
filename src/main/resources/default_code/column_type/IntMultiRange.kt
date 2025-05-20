@@ -1,6 +1,7 @@
 package default_code.column_type
 
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.Table
 
 
 class Int4MultiRangeColumnType : MultiRangeColumnType<Int>() {

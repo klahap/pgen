@@ -1,6 +1,5 @@
 package io.github.klahap.pgen.util.codegen
 
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
@@ -30,8 +29,8 @@ fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (th
     Column.Type.Primitive.INTERVAL -> Poet.duration
     Column.Type.Primitive.INT4RANGE -> IntRange::class.asTypeName()
     Column.Type.Primitive.INT8RANGE -> LongRange::class.asTypeName()
-    Column.Type.Primitive.INT4MULTIRANGE -> typeNameMultiRange.parameterizedBy(Int::class.asTypeName())
-    Column.Type.Primitive.INT8MULTIRANGE -> typeNameMultiRange.parameterizedBy(Long::class.asTypeName())
+    Column.Type.Primitive.INT4MULTIRANGE -> poet.multiRange.parameterizedBy(Int::class.asTypeName())
+    Column.Type.Primitive.INT8MULTIRANGE -> poet.multiRange.parameterizedBy(Long::class.asTypeName())
     Column.Type.Primitive.INT4 -> Int::class.asTypeName()
     Column.Type.Primitive.FLOAT4 -> Float::class.asTypeName()
     Column.Type.Primitive.FLOAT8 -> Double::class.asTypeName()
@@ -51,56 +50,48 @@ private fun codeBlock(format: String, vararg args: Any) = CodeBlock.builder().ad
 context(CodeGenContext)
 fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     is Column.Type.NonPrimitive.Array ->
-        codeBlock("%T(%L)", getArrayColumnType, elementType.getExposedColumnType())
+        codeBlock("%T(%L)", poet.getArrayColumnType, elementType.getExposedColumnType())
 
     is Column.Type.NonPrimitive.Composite ->
         codeBlock("%T(sqlType=%S)", getColumnTypeTypeName(), sqlType)
 
     is Column.Type.NonPrimitive.Enum ->
-        codeBlock("%T(%T::class)", ClassName("org.jetbrains.exposed.sql", "EnumerationColumnType"), name.typeName)
+        codeBlock("%T(%T::class)", Poet.enumerationColumnType, name.typeName)
 
     is Column.Type.NonPrimitive.Numeric ->
-        codeBlock(
-            "%T(precision = $precision, scale = $scale)",
-            ClassName("org.jetbrains.exposed.sql", "DecimalColumnType")
-        )
+        codeBlock("%T(precision = $precision, scale = $scale)", Poet.decimalColumnType)
 
     is Column.Type.NonPrimitive.Domain ->
-        codeBlock("%T(kClass=%T::class, sqlType=%S)", domainTypeColumn, getDomainTypename(), sqlType)
+        codeBlock("%T(kClass=%T::class, sqlType=%S)", poet.domainTypeColumn, getDomainTypename(), sqlType)
 
     is Column.Type.NonPrimitive.Reference ->
-        codeBlock("%T(kClass=%T::class, sqlType=%S)", domainTypeColumn, getValueClass().name.poet, originalType.sqlType)
+        codeBlock(
+            "%T(kClass=%T::class, sqlType=%S)",
+            poet.domainTypeColumn,
+            getValueClass().name.poet,
+            originalType.sqlType
+        )
 
-    Column.Type.Primitive.INT8 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "LongColumnType"))
-    Column.Type.Primitive.BOOL -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "BooleanColumnType"))
-    Column.Type.Primitive.BINARY -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "BinaryColumnType"))
-    Column.Type.Primitive.VARCHAR -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "TextColumnType"))
-    Column.Type.Primitive.DATE ->
-        codeBlock("%T()", ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "KotlinLocalDateColumnType"))
-
-    Column.Type.Primitive.INTERVAL ->
-        codeBlock("%T()", ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "KotlinDurationColumnType"))
-
-    Column.Type.Primitive.INT4RANGE -> codeBlock("%T()", typeNameInt4RangeColumnType)
-    Column.Type.Primitive.INT8RANGE -> codeBlock("%T()", typeNameInt8RangeColumnType)
-    Column.Type.Primitive.INT4MULTIRANGE -> codeBlock("%T()", typeNameInt4MultiRangeColumnType)
-    Column.Type.Primitive.INT8MULTIRANGE -> codeBlock("%T()", typeNameInt8MultiRangeColumnType)
-    Column.Type.Primitive.INT4 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "IntegerColumnType"))
-    Column.Type.Primitive.FLOAT4 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "FloatColumnType"))
-    Column.Type.Primitive.FLOAT8 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "DoubleColumnType"))
-    Column.Type.Primitive.JSON -> codeBlock("%T()", defaultJsonColumnType)
-    Column.Type.Primitive.JSONB -> codeBlock("%T()", defaultJsonColumnType)
-    Column.Type.Primitive.INT2 -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "ShortColumnType"))
-    Column.Type.Primitive.TEXT -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "TextColumnType"))
-    Column.Type.Primitive.TIME ->
-        codeBlock("%T()", ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "KotlinLocalTimeColumnType"))
-
-    Column.Type.Primitive.TIMESTAMP ->
-        codeBlock("%T()", ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "KotlinInstantColumnType"))
-
-    Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE ->
-        codeBlock("%T()", ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "KotlinOffsetDateTimeColumnType"))
-
-    Column.Type.Primitive.UUID -> codeBlock("%T()", ClassName("org.jetbrains.exposed.sql", "UUIDColumnType"))
-    Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> codeBlock("%T()", typeNameUnconstrainedNumericColumnType)
+    Column.Type.Primitive.INT8 -> codeBlock("%T()", Poet.longColumnType)
+    Column.Type.Primitive.BOOL -> codeBlock("%T()", Poet.booleanColumnType)
+    Column.Type.Primitive.BINARY -> codeBlock("%T()", Poet.binaryColumnType)
+    Column.Type.Primitive.VARCHAR -> codeBlock("%T()", Poet.textColumnType)
+    Column.Type.Primitive.DATE -> codeBlock("%T()", Poet.kotlinLocalDateColumnType)
+    Column.Type.Primitive.INTERVAL -> codeBlock("%T()", Poet.kotlinDurationColumnType)
+    Column.Type.Primitive.INT4RANGE -> codeBlock("%T()", poet.int4RangeColumnType)
+    Column.Type.Primitive.INT8RANGE -> codeBlock("%T()", poet.int8RangeColumnType)
+    Column.Type.Primitive.INT4MULTIRANGE -> codeBlock("%T()", poet.int4MultiRangeColumnType)
+    Column.Type.Primitive.INT8MULTIRANGE -> codeBlock("%T()", poet.int8MultiRangeColumnType)
+    Column.Type.Primitive.INT4 -> codeBlock("%T()", Poet.integerColumnType)
+    Column.Type.Primitive.FLOAT4 -> codeBlock("%T()", Poet.floatColumnType)
+    Column.Type.Primitive.FLOAT8 -> codeBlock("%T()", Poet.doubleColumnType)
+    Column.Type.Primitive.INT2 -> codeBlock("%T()", Poet.shortColumnType)
+    Column.Type.Primitive.TEXT -> codeBlock("%T()", Poet.textColumnType)
+    Column.Type.Primitive.TIME -> codeBlock("%T()", Poet.kotlinLocalTimeColumnType)
+    Column.Type.Primitive.TIMESTAMP -> codeBlock("%T()", Poet.kotlinInstantColumnType)
+    Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> codeBlock("%T()", Poet.kotlinOffsetDateTimeColumnType)
+    Column.Type.Primitive.UUID -> codeBlock("%T()", Poet.uuidColumnType)
+    Column.Type.Primitive.JSON -> codeBlock("%T()", poet.defaultJsonColumnType)
+    Column.Type.Primitive.JSONB -> codeBlock("%T()", poet.defaultJsonColumnType)
+    Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> codeBlock("%T()", poet.unconstrainedNumericColumnType)
 }

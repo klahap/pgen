@@ -78,10 +78,10 @@ private fun generateCode(config: Config) {
         createDirectoriesForRootPackageName = config.createDirectoriesForRootPackageName,
         typeMappings = spec.typeMappings.associate { it.sqlType to it.valueClass },
         typeOverwrites = spec.typeOverwrites.associate { it.sqlColumn to it.valueClass },
-        typeGroups = spec.tables.getColumnTypeGroups()
+        typeGroups = spec.tables.getColumnTypeGroups(),
     ).run {
         directorySync(config.outputPath) {
-            DefaultCodeFile.all().forEach { sync(it) }
+            DefaultCodeFile.all(connectionType = config.connectionType).forEach { sync(it) }
             spec.enums.forEach { sync(it) }
             spec.compositeTypes.forEach { sync(it) }
             spec.domains.filter { it.name !in typeMappings }.forEach { sync(it) }
@@ -127,6 +127,7 @@ fun main() {
         outputPath("/Users/klaus/repos/pgen-test/src/main/kotlin/db")
         specFilePath("/Users/klaus/repos/pgen-test/src/main/resources/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)
+        connectionType(Config.ConnectionType.R2DBC)
     }
     generate(config)
 }

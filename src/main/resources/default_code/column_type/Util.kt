@@ -3,11 +3,11 @@ package default_code.column_type
 import default_code.column_type.RawRange.Empty
 import default_code.column_type.RawRange.Normal
 import default_code.column_type.RawRangeBorder.Infinity
-import org.jetbrains.exposed.sql.ColumnType
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.ArrayColumnType
-import org.jetbrains.exposed.sql.CustomEnumerationColumnType
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ColumnType
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ArrayColumnType
+import org.jetbrains.exposed.v1.core.CustomEnumerationColumnType
+import org.jetbrains.exposed.v1.core.Table
 import org.postgresql.util.PGobject
 import kotlin.enums.enumEntries
 import kotlin.reflect.KClass

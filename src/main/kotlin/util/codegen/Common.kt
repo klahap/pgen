@@ -16,18 +16,6 @@ import io.github.klahap.pgen.util.DefaultCodeFile
 import java.time.OffsetDateTime
 
 object Poet {
-    val table = ClassName("org.jetbrains.exposed.sql", "Table")
-    val primaryKey = ClassName("org.jetbrains.exposed.sql", "Table", "PrimaryKey")
-    val column = ClassName("org.jetbrains.exposed.sql", "Column")
-    val date = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "date")
-    val time = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "time")
-    val timestamp = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "timestamp")
-    val timestampWithTimeZone = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "timestampWithTimeZone")
-    val jsonColumn = ClassName("org.jetbrains.exposed.sql.json", "json")
-    val resultRow = ClassName("org.jetbrains.exposed.sql", "ResultRow")
-    val alias = ClassName("org.jetbrains.exposed.sql", "Alias")
-    val updateBuilder = ClassName("org.jetbrains.exposed.sql.statements", "UpdateBuilder")
-
     val json = ClassName("kotlinx.serialization.json", "Json")
     val jsonElement = ClassName("kotlinx.serialization.json", "JsonElement")
 
@@ -37,18 +25,53 @@ object Poet {
     val localDate = ClassName("kotlinx.datetime", "LocalDate")
     val offsetDateTime = OffsetDateTime::class.asTypeName()
 
-    val defaultExpTimestamp = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "CurrentTimestamp")
-    val defaultExpTimestampZ = ClassName("org.jetbrains.exposed.sql.kotlin.datetime", "CurrentTimestampWithTimeZone")
-    val customFunction = ClassName("org.jetbrains.exposed.sql", "CustomFunction")
-    val uuidColumnType = ClassName("org.jetbrains.exposed.sql", "UUIDColumnType")
-
     val flowSingle = ClassName("kotlinx.coroutines.flow", "single")
     val flow = ClassName("kotlinx.coroutines.flow", "Flow")
     val generateChannelFlow = ClassName("kotlinx.coroutines.flow", "channelFlow")
     val trySendBlocking = ClassName("kotlinx.coroutines.channels", "trySendBlocking")
-    val transaction = ClassName("org.jetbrains.exposed.sql", "Transaction")
 
     val PGobject = ClassName("org.postgresql.util", "PGobject")
+
+
+    private val packageExposed = PackageName("org.jetbrains.exposed.v1")
+    private val packageExposedCore = packageExposed.plus("core")
+    private val packageExposedJson = packageExposed.plus("json")
+    private val packageExposedDatetime = packageExposed.plus("datetime")
+
+    val date = packageExposedDatetime.className("date")
+    val time = packageExposedDatetime.className("time")
+    val timestamp = packageExposedDatetime.className("timestamp")
+    val timestampWithTimeZone = packageExposedDatetime.className("timestampWithTimeZone")
+    val defaultExpTimestamp = packageExposedDatetime.className("CurrentTimestamp")
+    val defaultExpTimestampZ = packageExposedDatetime.className("CurrentTimestampWithTimeZone")
+    val kotlinLocalDateColumnType = packageExposedDatetime.className("KotlinLocalDateColumnType")
+    val kotlinDurationColumnType = packageExposedDatetime.className("KotlinDurationColumnType")
+    val kotlinLocalTimeColumnType = packageExposedDatetime.className("KotlinLocalTimeColumnType")
+    val kotlinInstantColumnType = packageExposedDatetime.className("KotlinInstantColumnType")
+    val kotlinOffsetDateTimeColumnType = packageExposedDatetime.className("KotlinOffsetDateTimeColumnType")
+
+    val customFunction = packageExposedCore.className("CustomFunction")
+    val table = packageExposedCore.className("Table")
+    val transaction = packageExposedCore.className("Transaction")
+    val columnType = packageExposedCore.className("ColumnType")
+    val primaryKey = packageExposedCore.className("Table", "PrimaryKey")
+    val column = packageExposedCore.className("Column")
+    val alias = packageExposedCore.className("Alias")
+    val resultRow = packageExposedCore.className("ResultRow")
+    val uuidColumnType = packageExposedCore.className("UUIDColumnType")
+    val enumerationColumnType = packageExposedCore.className("EnumerationColumnType")
+    val decimalColumnType = packageExposedCore.className("DecimalColumnType")
+    val longColumnType = packageExposedCore.className("LongColumnType")
+    val booleanColumnType = packageExposedCore.className("BooleanColumnType")
+    val binaryColumnType = packageExposedCore.className("BinaryColumnType")
+    val textColumnType = packageExposedCore.className("TextColumnType")
+    val integerColumnType = packageExposedCore.className("IntegerColumnType")
+    val floatColumnType = packageExposedCore.className("FloatColumnType")
+    val doubleColumnType = packageExposedCore.className("DoubleColumnType")
+    val shortColumnType = packageExposedCore.className("ShortColumnType")
+    val updateBuilder = packageExposedCore.plus("statements").className("UpdateBuilder")
+
+    val jsonColumn = packageExposedJson.className("json")
 }
 
 context(CodeGenContext)
@@ -116,4 +139,4 @@ context(CodeGenContext)
 fun PackageName.toRelativePath() = if (createDirectoriesForRootPackageName)
     name.replace(".", "/")
 else
-    name.removePrefix(rootPackageName.name).trimStart('.').replace(".", "/")
+    name.removePrefix(poet.rootPackageName.name).trimStart('.').replace(".", "/")

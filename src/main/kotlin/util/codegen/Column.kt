@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.model.sql.Column
 
 
+context(CodeGenContext)
 private fun Column.getDefaultExpression(): Pair<String, List<Any>>? = when (type) {
     Column.Type.Primitive.TIMESTAMP -> when (default) {
         "now()" -> ".defaultExpression(%T)" to listOf(Poet.defaultExpTimestamp)
@@ -54,11 +55,11 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                     |    fromDb = { %T<%T>(it as String) },
                     |    toDb = { it.toPgObject() },
                     |)$postfix""".trimMargin(),
-                    customEnumerationArray,
+                    poet.customEnumerationArray,
                     type.getTypeName(),
                     columnName,
                     "${elementType.name.schema.schemaName}.${elementType.name.name}",
-                    typeNameGetPgEnumByLabel,
+                    poet.getPgEnumByLabel,
                     elementType.name.typeName,
                     *postArgs,
                 )
@@ -85,7 +86,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
             )$postfix""".trimIndent(),
             columnName,
             "${type.name.schema.schemaName}.${type.name.name}",
-            typeNameGetPgEnumByLabel,
+            poet.getPgEnumByLabel,
             type.name.typeName,
             *postArgs
         )
@@ -104,7 +105,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                 sqlType = %S,
                 builder = { %T${type.parserFunction}(it as %T) },
             )$postfix""".trimIndent(),
-            domainType,
+            poet.domainType,
             type.getDomainTypename(),
             columnName,
             type.sqlType,
@@ -121,22 +122,22 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         Column.Type.Primitive.INTERVAL -> initializer("duration(name = %S)$postfix", columnName, *postArgs)
         Column.Type.Primitive.INT4RANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, typeNameInt4RangeColumnType, *postArgs
+            columnName, poet.int4RangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT8RANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, typeNameInt8RangeColumnType, *postArgs
+            columnName, poet.int8RangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT4MULTIRANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, typeNameInt4MultiRangeColumnType, *postArgs
+            columnName, poet.int4MultiRangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT8MULTIRANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, typeNameInt8MultiRangeColumnType, *postArgs
+            columnName, poet.int8MultiRangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT4 -> initializer("integer(name = %S)$postfix", columnName, *postArgs)
@@ -175,7 +176,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         Column.Type.Primitive.UUID -> initializer("uuid(name = %S)$postfix", columnName, *postArgs)
         Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, typeNameUnconstrainedNumericColumnType, *postArgs
+            columnName, poet.unconstrainedNumericColumnType, *postArgs
         )
     }
 }
