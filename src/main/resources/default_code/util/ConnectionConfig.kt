@@ -206,7 +206,7 @@ sealed interface ConnectionConfig {
 
     companion object {
         fun parse(url: String): ConnectionConfig {
-            val regex = Regex("""([\w:]+):(\w+)://([^:/]+)(?::(\d+))?/(\w+)(?:\?(.+))?""")
+            val regex = Regex("""([\w:]+):(\w+)://([^:/]+)(?::(\d+))?/([\w-]+)(?:\?(.+))?""")
             val match = regex.matchEntire(url)
                 ?: throw IllegalArgumentException("Unsupported or invalid DB URL")
             val (protocolStr, subProtocol, host, portStr, database, queryStr) = match.destructured
