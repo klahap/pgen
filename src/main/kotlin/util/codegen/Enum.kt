@@ -5,9 +5,9 @@ import io.github.klahap.pgen.dsl.*
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.util.toSnakeCase
 
-context(codeGenContext: CodeGenContext)
+context(CodeGenContext)
 internal fun Enum.toTypeSpecInternal() = buildEnum(this@toTypeSpecInternal.name.prettyName) {
-    addSuperinterface(codeGenContext.poet.pgEnum)
+    addSuperinterface(poet.pgEnum)
     primaryConstructor {
         addParameter("pgEnumLabel", String::class)
         addProperty(name = "pgEnumLabel", type = String::class.asTypeName()) {

@@ -7,7 +7,7 @@ import io.github.klahap.pgen.dsl.buildValueClass
 import io.github.klahap.pgen.dsl.primaryConstructor
 import io.github.klahap.pgen.model.sql.Column.Type.NonPrimitive.Domain
 
-context(_: CodeGenContext)
+context(CodeGenContext)
 internal fun Domain.toTypeSpecInternal() = buildValueClass(this@toTypeSpecInternal.name.prettyName) {
     val dataFieldName = "value"
 

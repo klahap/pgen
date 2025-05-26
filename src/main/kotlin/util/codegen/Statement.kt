@@ -15,12 +15,12 @@ import io.github.klahap.pgen.model.sql.Statement
 import io.github.klahap.pgen.dsl.primaryConstructor
 import io.github.klahap.pgen.util.makeDifferent
 
-context(_: CodeGenContext)
+context(CodeGenContext)
 internal val Collection<Statement>.packageName
     get() = map { it.name.packageName }.distinct().singleOrNull()
         ?: error("statements from different DB's cannot wirte in the same file")
 
-context(_: CodeGenContext)
+context(CodeGenContext)
 internal fun FileSpec.Builder.addStatements(statements: Collection<Statement>) {
     val packageName = statements.packageName
     statements.map { statement ->
@@ -56,8 +56,9 @@ internal fun FileSpec.Builder.addStatements(statements: Collection<Statement>) {
 
             addCode {
                 val rowSetName = "rowSet".makeDifferent(statementNames)
+
                 val inputsPairs = buildCodeBlock {
-                    statement.variables.map { name ->
+                    val inputs = statement.variables.map { name ->
                         val type = statement.variableTypes[name]!!
                         add("%L to %L,", type.getExposedColumnType(), name.pretty)
                     }

@@ -11,7 +11,7 @@ data class Table(
     val primaryKey: PrimaryKey?,
     val foreignKeys: List<ForeignKey>,
 ) : SqlObject {
-    context(_: CodeGenContext)
+    context(CodeGenContext)
     val entityTypeName
         get() = ClassName("${name.packageName.name}.${name.prettyName}", "Entity")
 
