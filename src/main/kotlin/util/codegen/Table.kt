@@ -15,7 +15,7 @@ import io.github.klahap.pgen.dsl.primaryConstructor
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.util.makeDifferent
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.name.prettyName) {
     val foreignKeysSingle = this@toTypeSpecInternal.foreignKeys.map { it.toTyped() }
         .filterIsInstance<Table.ForeignKeyTyped.SingleKey>()
@@ -73,7 +73,7 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
 }
 
 
-context(CodeGenContext)
+context(codeGenContext: CodeGenContext)
 private fun Table.toTypeSpecEntity() = buildDataClass(this@toTypeSpecEntity.entityTypeName.simpleName) {
     primaryConstructor {
         this@toTypeSpecEntity.columns.forEach { column ->
@@ -97,7 +97,7 @@ private fun Table.toTypeSpecEntity() = buildDataClass(this@toTypeSpecEntity.enti
                     add(
                         "  %L = row.%T(%T.%L, alias),\n",
                         column.prettyName,
-                        poet.getColumnWithAlias,
+                        codeGenContext.poet.getColumnWithAlias,
                         this@toTypeSpecEntity.name.typeName,
                         column.prettyName,
                     )

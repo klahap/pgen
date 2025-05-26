@@ -34,7 +34,7 @@ suspend fun <T> Database.suspendTransaction(
 ) = newSuspendedTransaction(context, db = this, readOnly = readOnly) { block() }
 
 fun interface TransactionFlowScope<T> {
-    context(Transaction, ProducerScope<T>)
+    context(_: Transaction, _: ProducerScope<T>)
     suspend fun block()
 }
 

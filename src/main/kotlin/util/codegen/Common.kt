@@ -74,7 +74,7 @@ object Poet {
     val jsonColumn = packageExposedJson.className("json")
 }
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 private fun SqlObject.toTypeSpec() = when (this) {
     is Enum -> toTypeSpecInternal()
     is Table -> toTypeSpecInternal()
@@ -82,13 +82,13 @@ private fun SqlObject.toTypeSpec() = when (this) {
     is CompositeType -> toTypeSpecInternal()
 }
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 fun FileSpec.Builder.add(obj: SqlObject) {
     val spec = obj.toTypeSpec()
     addType(spec)
 }
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 fun DirectorySyncService.sync(
     obj: SqlObject,
     block: FileSpec.Builder.() -> Unit = {},
@@ -107,7 +107,7 @@ fun DirectorySyncService.sync(
     )
 }
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 fun DirectorySyncService.sync(
     obj: Collection<Statement>,
     block: FileSpec.Builder.() -> Unit = {},
@@ -127,7 +127,7 @@ fun DirectorySyncService.sync(
     )
 }
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 fun DirectorySyncService.sync(codeFile: DefaultCodeFile) {
     sync(
         relativePath = codeFile.relativePath,
@@ -135,8 +135,8 @@ fun DirectorySyncService.sync(codeFile: DefaultCodeFile) {
     )
 }
 
-context(CodeGenContext)
-fun PackageName.toRelativePath() = if (createDirectoriesForRootPackageName)
+context(codeGenContext: CodeGenContext)
+fun PackageName.toRelativePath() = if (codeGenContext.createDirectoriesForRootPackageName)
     name.replace(".", "/")
 else
-    name.removePrefix(poet.rootPackageName.name).trimStart('.').replace(".", "/")
+    name.removePrefix(codeGenContext.poet.rootPackageName.name).trimStart('.').replace(".", "/")

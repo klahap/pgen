@@ -9,7 +9,7 @@ import java.math.BigDecimal
 import java.util.UUID
 
 
-context(CodeGenContext)
+context(codeGenContext: CodeGenContext)
 fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (this) {
     is Column.Type.NonPrimitive.Array -> if (innerArrayType)
         elementType.getTypeName()
@@ -29,8 +29,8 @@ fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (th
     Column.Type.Primitive.INTERVAL -> Poet.duration
     Column.Type.Primitive.INT4RANGE -> IntRange::class.asTypeName()
     Column.Type.Primitive.INT8RANGE -> LongRange::class.asTypeName()
-    Column.Type.Primitive.INT4MULTIRANGE -> poet.multiRange.parameterizedBy(Int::class.asTypeName())
-    Column.Type.Primitive.INT8MULTIRANGE -> poet.multiRange.parameterizedBy(Long::class.asTypeName())
+    Column.Type.Primitive.INT4MULTIRANGE -> codeGenContext.poet.multiRange.parameterizedBy(Int::class.asTypeName())
+    Column.Type.Primitive.INT8MULTIRANGE -> codeGenContext.poet.multiRange.parameterizedBy(Long::class.asTypeName())
     Column.Type.Primitive.INT4 -> Int::class.asTypeName()
     Column.Type.Primitive.FLOAT4 -> Float::class.asTypeName()
     Column.Type.Primitive.FLOAT8 -> Double::class.asTypeName()
@@ -47,10 +47,10 @@ fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (th
 
 private fun codeBlock(format: String, vararg args: Any) = CodeBlock.builder().add(format, *args).build()
 
-context(CodeGenContext)
+context(codeGenContext: CodeGenContext)
 fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     is Column.Type.NonPrimitive.Array ->
-        codeBlock("%T(%L)", poet.getArrayColumnType, elementType.getExposedColumnType())
+        codeBlock("%T(%L)", codeGenContext.poet.getArrayColumnType, elementType.getExposedColumnType())
 
     is Column.Type.NonPrimitive.Composite ->
         codeBlock("%T(sqlType=%S)", getColumnTypeTypeName(), sqlType)
@@ -62,14 +62,19 @@ fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
         codeBlock("%T(precision = $precision, scale = $scale)", Poet.decimalColumnType)
 
     is Column.Type.NonPrimitive.Domain ->
-        codeBlock("%T(kClass=%T::class, sqlType=%S)", poet.domainTypeColumn, getDomainTypename(), sqlType)
+        codeBlock(
+            "%T(kClass=%T::class, sqlType=%S)",
+            codeGenContext.poet.domainTypeColumn,
+            getDomainTypename(),
+            sqlType,
+        )
 
     is Column.Type.NonPrimitive.Reference ->
         codeBlock(
             "%T(kClass=%T::class, sqlType=%S)",
-            poet.domainTypeColumn,
+            codeGenContext.poet.domainTypeColumn,
             getValueClass().name.poet,
-            originalType.sqlType
+            originalType.sqlType,
         )
 
     Column.Type.Primitive.INT8 -> codeBlock("%T()", Poet.longColumnType)
@@ -78,10 +83,10 @@ fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     Column.Type.Primitive.VARCHAR -> codeBlock("%T()", Poet.textColumnType)
     Column.Type.Primitive.DATE -> codeBlock("%T()", Poet.kotlinLocalDateColumnType)
     Column.Type.Primitive.INTERVAL -> codeBlock("%T()", Poet.kotlinDurationColumnType)
-    Column.Type.Primitive.INT4RANGE -> codeBlock("%T()", poet.int4RangeColumnType)
-    Column.Type.Primitive.INT8RANGE -> codeBlock("%T()", poet.int8RangeColumnType)
-    Column.Type.Primitive.INT4MULTIRANGE -> codeBlock("%T()", poet.int4MultiRangeColumnType)
-    Column.Type.Primitive.INT8MULTIRANGE -> codeBlock("%T()", poet.int8MultiRangeColumnType)
+    Column.Type.Primitive.INT4RANGE -> codeBlock("%T()", codeGenContext.poet.int4RangeColumnType)
+    Column.Type.Primitive.INT8RANGE -> codeBlock("%T()", codeGenContext.poet.int8RangeColumnType)
+    Column.Type.Primitive.INT4MULTIRANGE -> codeBlock("%T()", codeGenContext.poet.int4MultiRangeColumnType)
+    Column.Type.Primitive.INT8MULTIRANGE -> codeBlock("%T()", codeGenContext.poet.int8MultiRangeColumnType)
     Column.Type.Primitive.INT4 -> codeBlock("%T()", Poet.integerColumnType)
     Column.Type.Primitive.FLOAT4 -> codeBlock("%T()", Poet.floatColumnType)
     Column.Type.Primitive.FLOAT8 -> codeBlock("%T()", Poet.doubleColumnType)
@@ -91,7 +96,7 @@ fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     Column.Type.Primitive.TIMESTAMP -> codeBlock("%T()", Poet.kotlinInstantColumnType)
     Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> codeBlock("%T()", Poet.kotlinOffsetDateTimeColumnType)
     Column.Type.Primitive.UUID -> codeBlock("%T()", Poet.uuidColumnType)
-    Column.Type.Primitive.JSON -> codeBlock("%T()", poet.defaultJsonColumnType)
-    Column.Type.Primitive.JSONB -> codeBlock("%T()", poet.defaultJsonColumnType)
-    Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> codeBlock("%T()", poet.unconstrainedNumericColumnType)
+    Column.Type.Primitive.JSON -> codeBlock("%T()", codeGenContext.poet.defaultJsonColumnType)
+    Column.Type.Primitive.JSONB -> codeBlock("%T()", codeGenContext.poet.defaultJsonColumnType)
+    Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> codeBlock("%T()", codeGenContext.poet.unconstrainedNumericColumnType)
 }

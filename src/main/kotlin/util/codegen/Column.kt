@@ -6,7 +6,7 @@ import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.model.sql.Column
 
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 private fun Column.getDefaultExpression(): Pair<String, List<Any>>? = when (type) {
     Column.Type.Primitive.TIMESTAMP -> when (default) {
         "now()" -> ".defaultExpression(%T)" to listOf(Poet.defaultExpTimestamp)
@@ -34,7 +34,7 @@ private fun Column.getDefaultExpression(): Pair<String, List<Any>>? = when (type
     else -> null
 }
 
-context(CodeGenContext)
+context(codeGenContext: CodeGenContext)
 fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: List<Any>) {
     val columnName = column.name.value
     var postfix = postfix
@@ -43,7 +43,6 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         postfix = it.first + postfix
         postArgs = (it.second + postArgs.toList()).toTypedArray()
     }
-
     when (val type = column.type) {
         is Column.Type.NonPrimitive.Array -> {
             when (val elementType = type.elementType) {
@@ -55,11 +54,11 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                     |    fromDb = { %T<%T>(it as String) },
                     |    toDb = { it.toPgObject() },
                     |)$postfix""".trimMargin(),
-                    poet.customEnumerationArray,
+                    codeGenContext.poet.customEnumerationArray,
                     type.getTypeName(),
                     columnName,
                     "${elementType.name.schema.schemaName}.${elementType.name.name}",
-                    poet.getPgEnumByLabel,
+                    codeGenContext.poet.getPgEnumByLabel,
                     elementType.name.typeName,
                     *postArgs,
                 )
@@ -86,7 +85,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
             )$postfix""".trimIndent(),
             columnName,
             "${type.name.schema.schemaName}.${type.name.name}",
-            poet.getPgEnumByLabel,
+            codeGenContext.poet.getPgEnumByLabel,
             type.name.typeName,
             *postArgs
         )
@@ -105,7 +104,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                 sqlType = %S,
                 builder = { %T${type.parserFunction}(it as %T) },
             )$postfix""".trimIndent(),
-            poet.domainType,
+            codeGenContext.poet.domainType,
             type.getDomainTypename(),
             columnName,
             type.sqlType,
@@ -122,22 +121,22 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         Column.Type.Primitive.INTERVAL -> initializer("duration(name = %S)$postfix", columnName, *postArgs)
         Column.Type.Primitive.INT4RANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int4RangeColumnType, *postArgs
+            columnName, codeGenContext.poet.int4RangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT8RANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int8RangeColumnType, *postArgs
+            columnName, codeGenContext.poet.int8RangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT4MULTIRANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int4MultiRangeColumnType, *postArgs
+            columnName, codeGenContext.poet.int4MultiRangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT8MULTIRANGE -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int8MultiRangeColumnType, *postArgs
+            columnName, codeGenContext.poet.int8MultiRangeColumnType, *postArgs
         )
 
         Column.Type.Primitive.INT4 -> initializer("integer(name = %S)$postfix", columnName, *postArgs)
@@ -176,12 +175,12 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         Column.Type.Primitive.UUID -> initializer("uuid(name = %S)$postfix", columnName, *postArgs)
         Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.unconstrainedNumericColumnType, *postArgs
+            columnName, codeGenContext.poet.unconstrainedNumericColumnType, *postArgs
         )
     }
 }
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 internal fun Column.getColumnTypeName() = when (type) {
     is Column.Type.NonPrimitive.Array -> List::class.asTypeName()
         .parameterizedBy(type.getTypeName())

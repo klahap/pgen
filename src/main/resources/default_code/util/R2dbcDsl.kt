@@ -66,7 +66,7 @@ fun <T> R2dbcDatabase.blockingTransaction(
 }
 
 fun interface TransactionFlowScope<T> {
-    context(Transaction, ProducerScope<T>)
+    context(_: Transaction, _: ProducerScope<T>)
     suspend fun block()
 }
 

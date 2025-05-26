@@ -9,11 +9,11 @@ data class DefaultCodeFile(
 ) {
     val relativePath get() = (relativePackageNames + listOf(fileName)).joinToString("/")
 
-    context(CodeGenContext)
+    context(codeGenContext: CodeGenContext)
     fun getContent(): String = javaClass.getResourceAsStream("/default_code/$relativePath")!!
         .readAllBytes().decodeToString()
-        .replaceFirst("package default_code", "package ${poet.rootPackageName}")
-        .replace("import default_code", "import ${poet.rootPackageName}")
+        .replaceFirst("package default_code", "package ${codeGenContext.poet.rootPackageName}")
+        .replace("import default_code", "import ${codeGenContext.poet.rootPackageName}")
 
     companion object {
         suspend fun SequenceScope<DefaultCodeFile>.yield(relativePackageNames: List<String>, fileName: String) {
