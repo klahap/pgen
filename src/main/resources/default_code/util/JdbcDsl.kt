@@ -6,7 +6,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.ISqlExpressionBuilder
+import org.jetbrains.exposed.v1.core.Op
+import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction as jdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 
@@ -50,5 +55,24 @@ fun <T> Database.transactionFlow(
         ) {
             block.block()
         }
+    }
+}
+
+fun Iterable<ResultRow>.singleRowOrThrow() = take(2).let {
+    when {
+        it.isEmpty() -> throw NoEntityException(message = "no rows returned")
+        it.size == 1 -> it.single()
+        else -> throw MultipleEntitiesException(message = "multiple rows returned")
+    }
+}
+
+fun <T : Table> T.deleteSingleOrThrow(
+    op: T.(ISqlExpressionBuilder) -> Op<Boolean>,
+) {
+    val countDelete = deleteWhere(limit = 2, op = op)
+    when (countDelete) {
+        0 -> throw NoEntityException("no rows affected")
+        1 -> Unit
+        else -> throw MultipleEntitiesException("multiple rows affected: $countDelete")
     }
 }
