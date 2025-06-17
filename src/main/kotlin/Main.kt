@@ -173,7 +173,7 @@ class Plugin : org.gradle.api.Plugin<Project> {
             }
         }
 
-        project.task("flyway migration") { task ->
+        project.task("flywayMigration") { task ->
             task.group = TASK_GROUP
             task.doLast {
                 val config = configBuilder.build()
