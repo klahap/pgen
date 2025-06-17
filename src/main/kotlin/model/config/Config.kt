@@ -29,7 +29,21 @@ data class Config(
         val statementScripts: Set<Path>,
         val typeMappings: Set<TypeMapping>,
         val typeOverwrites: Set<TypeOverwrite>,
+        val flyway: Flyway?,
     ) {
+        data class Flyway(
+            val migrationDirectory: Path,
+        ) {
+            class Builder {
+                private var migrationDirectory: Path? = null
+                fun migrationDirectory(path: Path) = apply { migrationDirectory = path }
+                fun migrationDirectory(path: String) = apply { migrationDirectory = Path(path) }
+                fun build() = Flyway(
+                    migrationDirectory = migrationDirectory ?: error("no migration file directory defined"),
+                )
+            }
+        }
+
         data class DbConnectionConfig(
             val url: String,
             val user: String,
@@ -60,6 +74,7 @@ data class Config(
             private var statementScripts: Set<Path>? = null
             private var typeMappings: Set<TypeMapping>? = null
             private var typeOverwrites: Set<TypeOverwrite>? = null
+            private var flyway: Flyway? = null
 
             class StatementCollectionBuilder {
                 private val scripts = linkedSetOf<Path>()
@@ -148,6 +163,10 @@ data class Config(
                 typeOverwrites = TypeOverwriteBuilder(dbName = dbName).apply(block).build()
             }
 
+            fun flyway(block: Flyway.Builder.() -> Unit) {
+                flyway = Flyway.Builder().apply(block).build()
+            }
+
             fun build() = Db(
                 dbName = dbName,
                 connectionConfig = connectionConfig,
@@ -155,6 +174,7 @@ data class Config(
                 statementScripts = statementScripts ?: emptySet(),
                 typeMappings = typeMappings?.distinctBy(TypeMapping::sqlType)?.toSet() ?: emptySet(),
                 typeOverwrites = typeOverwrites?.distinctBy(TypeOverwrite::sqlColumn)?.toSet() ?: emptySet(),
+                flyway = flyway,
             )
 
             companion object {

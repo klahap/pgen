@@ -18,6 +18,7 @@ import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.CodeGenContext.Companion.getColumnTypeGroups
 import io.github.klahap.pgen.util.codegen.sync
 import io.github.klahap.pgen.util.parseStatements
+import io.github.klahap.pgen.util.toFlywayOrNull
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.gradle.api.Project
@@ -97,6 +98,14 @@ private fun generate(config: Config) {
     generateCode(config = config)
 }
 
+private fun flywayMigration(config: Config) {
+    config.dbConfigs.forEach { dbConfig ->
+        val flyway = dbConfig.toFlywayOrNull() ?: return@forEach
+        println("migrate db '${dbConfig.dbName}' with flyway")
+        flyway.migrate()
+    }
+}
+
 fun main() {
     val envFile = EnvFileService(".env")
     val config = buildConfig {
@@ -105,6 +114,9 @@ fun main() {
                 url(envFile["DB_URL"])
                 user(envFile["DB_USER"])
                 password(envFile["DB_PASSWORD"])
+            }
+            flyway {
+                migrationDirectory("./test_migration")
             }
             tableFilter {
                 addSchemas("public")
@@ -132,7 +144,6 @@ fun main() {
     generate(config)
 }
 
-
 class Plugin : org.gradle.api.Plugin<Project> {
 
     override fun apply(project: Project) {
@@ -159,6 +170,14 @@ class Plugin : org.gradle.api.Plugin<Project> {
             task.doLast {
                 val config = configBuilder.build()
                 generateCode(config)
+            }
+        }
+
+        project.task("flyway migration") { task ->
+            task.group = TASK_GROUP
+            task.doLast {
+                val config = configBuilder.build()
+                flywayMigration(config)
             }
         }
     }

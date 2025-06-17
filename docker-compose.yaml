@@ -10,5 +10,3 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5438:5432"
-    volumes:
-      - ./test-schema.sql:/docker-entrypoint-initdb.d/init.sql

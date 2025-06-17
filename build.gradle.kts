@@ -19,7 +19,9 @@ repositories {
 
 dependencies {
     implementation("com.squareup:kotlinpoet:2.0.0")
-    implementation("org.postgresql:postgresql:42.7.2")
+    implementation("org.postgresql:postgresql:42.7.4")
+    implementation("org.flywaydb:flyway-core:11.6.0")
+    implementation("org.flywaydb:flyway-database-postgresql:11.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.charleskorn.kaml:kaml:0.66.0")
 }
