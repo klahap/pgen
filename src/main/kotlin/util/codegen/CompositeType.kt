@@ -98,6 +98,7 @@ private fun CodeBlock.Builder.addPgFieldConverter(type: Column.Type) = when (typ
     Column.Type.Primitive.TIMESTAMP,
     Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE,
     is Column.Type.NonPrimitive.Array,
+    is Column.Type.NonPrimitive.PgVector,
     is Column.Type.NonPrimitive.Composite,
     is Column.Type.NonPrimitive.Domain,
     is Column.Type.NonPrimitive.Reference ->

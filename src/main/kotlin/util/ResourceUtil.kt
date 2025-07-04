@@ -31,6 +31,7 @@ data class DefaultCodeFile(
             yield(listOf("column_type"), "RangeColumnType.kt")
             yield(listOf("column_type"), "UnconstrainedNumericColumnType.kt")
             yield(listOf("column_type"), "Util.kt")
+            yield(listOf("column_type"), "PgVectorColumnType.kt")
             yield(listOf("util"), "BatchUpdateStatementDsl.kt")
             yield(listOf("util"), "Dsl.kt")
             yield(listOf("util"), "ConnectionConfig.kt")
@@ -38,6 +39,10 @@ data class DefaultCodeFile(
             when (connectionType) {
                 Config.ConnectionType.JDBC -> yield(listOf("util"), "JdbcDsl.kt")
                 Config.ConnectionType.R2DBC -> yield(listOf("util"), "R2dbcDsl.kt")
+            }
+            when (connectionType) {
+                Config.ConnectionType.JDBC -> yield(listOf("column_type"), "UtilJdbc.kt")
+                Config.ConnectionType.R2DBC -> yield(listOf("column_type"), "UtilR2dbc.kt")
             }
         }
     }

@@ -19,6 +19,7 @@ fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (th
     is Column.Type.NonPrimitive.Domain -> getDomainTypename()
     is Column.Type.NonPrimitive.Reference -> getValueClass().name.poet
     is Column.Type.NonPrimitive.Enum -> name.typeName
+    is Column.Type.NonPrimitive.PgVector -> FloatArray::class.asTypeName()
     is Column.Type.NonPrimitive.Composite -> name.typeName
     is Column.Type.NonPrimitive.Numeric -> BigDecimal::class.asTypeName()
     Column.Type.Primitive.INT8 -> Long::class.asTypeName()
@@ -51,6 +52,9 @@ context(CodeGenContext)
 fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     is Column.Type.NonPrimitive.Array ->
         codeBlock("%T(%L)", poet.getArrayColumnType, elementType.getExposedColumnType())
+
+    is Column.Type.NonPrimitive.PgVector ->
+        codeBlock("%T(schema=%S)", poet.packageCustomColumn.className("PgVectorColumnType"), schema)
 
     is Column.Type.NonPrimitive.Composite ->
         codeBlock("%T(sqlType=%S)", getColumnTypeTypeName(), sqlType)

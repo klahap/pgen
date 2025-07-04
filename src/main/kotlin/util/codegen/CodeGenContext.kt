@@ -46,7 +46,7 @@ class CodeGenContext(
     data class Poet(
         val rootPackageName: PackageName,
     ) {
-        private val packageCustomColumn = PackageName("$rootPackageName.column_type")
+        val packageCustomColumn = PackageName("$rootPackageName.column_type")
         private val packageUtil = PackageName("$rootPackageName.util")
 
         val getArrayColumnType = packageCustomColumn.className("getArrayColumnType")

@@ -114,6 +114,18 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
             *postArgs
         )
 
+        is Column.Type.NonPrimitive.PgVector -> initializer(
+            """
+            %T(
+                name = %S,
+                schema = %S,
+            )$postfix""".trimIndent(),
+            poet.packageCustomColumn.className("pgVector"),
+            columnName,
+            type.schema,
+            *postArgs
+        )
+
         Column.Type.Primitive.INT8 -> initializer("long(name = %S)$postfix", columnName, *postArgs)
         Column.Type.Primitive.BOOL -> initializer("bool(name = %S)$postfix", columnName, *postArgs)
         Column.Type.Primitive.BINARY -> initializer("binary(name = %S)$postfix", columnName, *postArgs)

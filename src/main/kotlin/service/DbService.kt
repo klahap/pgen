@@ -116,10 +116,22 @@ class DbService(
                 columnTypeCategoryOverride = getString("column_element_type_category")!!,
             )
         )
-        if (schema != dbName.schemaPgCatalog) return when (columnTypeCategory) {
-            "E" -> NonPrimitive.Enum(SqlObjectName(schema = schema, name = columnTypeName))
-            "C" -> NonPrimitive.Composite(SqlObjectName(schema = schema, name = columnTypeName))
-            else -> error("Unknown column type '$columnTypeCategory' for column_type column type '$schema:$columnTypeName'")
+
+        if (schema != dbName.schemaPgCatalog) {
+            fun unknownError(): Nothing =
+                error("Unknown column type '$columnTypeCategory' for column_type column type '$schema:$columnTypeName'")
+            return when (columnTypeCategory) {
+                "E" -> NonPrimitive.Enum(SqlObjectName(schema = schema, name = columnTypeName))
+                "C" -> NonPrimitive.Composite(SqlObjectName(schema = schema, name = columnTypeName))
+                "U" -> {
+                    when (columnTypeName) {
+                        NonPrimitive.PgVector.VECTOR_NAME -> NonPrimitive.PgVector(schema = schema.schemaName)
+                        else -> unknownError()
+                    }
+                }
+
+                else -> unknownError()
+            }
         }
         return when (columnTypeName) {
             "numeric" -> {

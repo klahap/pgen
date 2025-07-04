@@ -63,6 +63,14 @@ inline fun <reified T : Any> Table.domainType(
     return registerColumn(name = name, type = type)
 }
 
+fun Table.pgVector(
+    name: String,
+    schema: String,
+): Column<FloatArray> {
+    val type = PgVectorColumnType(schema = schema)
+    return registerColumn(name = name, type = type)
+}
+
 internal fun List<RawRange>.toInt4MultiRange(): MultiRange<Int> = MultiRange(map { it.toInt4Range() }.toSet())
 internal fun List<RawRange>.toInt8MultiRange(): MultiRange<Long> = MultiRange(map { it.toInt8Range() }.toSet())
 internal fun String.parseMultiRange(): List<RawRange> = trimStart('{').trimEnd('}')
@@ -149,3 +157,8 @@ internal fun String.parseRange(): RawRange {
 }
 
 internal fun ClosedRange<*>.toPgRangeString(): String = "[$start,$endInclusive]"
+
+internal fun parseFloatArray(data: String): FloatArray {
+    val cleaned = data.trim().removePrefix("[").removeSuffix("]")
+    return cleaned.split(",").map { it.trim().toFloat() }.toFloatArray()
+}

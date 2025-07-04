@@ -136,8 +136,9 @@ fun main() {
             }
         }
         packageName("io.github.klahap.pgen_test.db")
-        outputPath("/Users/klaus/repos/pgen-test/src/main/kotlin/db")
-        specFilePath("/Users/klaus/repos/pgen-test/src/main/resources/pgen-spec.yaml")
+        val testRepo = envFile["TEST_REPO"]
+        outputPath("$testRepo/src/main/kotlin/db")
+        specFilePath("$testRepo/src/main/resources/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)
         connectionType(Config.ConnectionType.R2DBC)
     }

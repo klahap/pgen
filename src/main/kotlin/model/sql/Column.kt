@@ -80,6 +80,17 @@ data class Column(
                 fun getColumnTypeTypeName() = ClassName("${name.packageName}", "${name.prettyName}.ColumnType")
             }
 
+
+            @Serializable
+            @SerialName("pgvector")
+            data class PgVector(val schema: String) : NonPrimitive {
+                override val sqlType get() = "$schema.$VECTOR_NAME"
+
+                companion object {
+                    const val VECTOR_NAME = "vector"
+                }
+            }
+
             @Serializable
             @SerialName("numeric")
             data class Numeric(val precision: Int, val scale: Int) : NonPrimitive {
@@ -128,6 +139,7 @@ data class Column(
                 override val originalType: Type,
             ) : DomainType {
                 override val sqlType: String get() = originalType.sqlType
+
                 context(CodeGenContext)
                 override fun getDomainTypename(): TypeName = valueClass.name.poet
 
