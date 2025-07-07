@@ -13,15 +13,33 @@ import org.jetbrains.exposed.v1.r2dbc.R2dbcTransaction
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction as r2dbcSuspendTransaction
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransactionAsync as r2dbcSuspendTransactionAsync
 import kotlin.coroutines.CoroutineContext
+import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
+import io.r2dbc.postgresql.PostgresqlConnectionFactory
+import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
+import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
 
 
 fun R2dbcDatabase.Companion.connect(
-    connectionConfig: ConnectionConfig.Async,
-    user: String,
-    password: String,
+    config: ConnectionConfig.Async,
+    username: String? = null,
+    password: String? = null,
+    block: PostgresqlConnectionConfiguration.Builder.() -> Unit = {},
 ): R2dbcDatabase {
-    val url = connectionConfig.url(user = user, password = password)
-    val db = R2dbcDatabase.connect(url = url)
+    val options = PostgresqlConnectionConfiguration.builder().apply {
+        host(config.host)
+        config.port?.let { port(it) }
+        database(config.database)
+        username?.let { username(it) }
+        password?.let { password(it) }
+        block()
+    }.build()
+    val cxFactory = PostgresqlConnectionFactory(options)
+    val db = R2dbcDatabase.connect(
+        connectionFactory = cxFactory,
+        databaseConfig = R2dbcDatabaseConfig {
+            explicitDialect = PostgreSQLDialect()
+        }
+    )
     return db
 }
 

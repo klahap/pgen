@@ -53,7 +53,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                     |    name = %S,
                     |    sql = %S,
                     |    fromDb = { %T<%T>(it as String) },
-                    |    toDb = { it.toPgObject() },
+                    |    toDb = { it.%T() },
                     |)$postfix""".trimMargin(),
                     poet.customEnumerationArray,
                     type.getTypeName(),
@@ -61,6 +61,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                     "${elementType.name.schema.schemaName}.${elementType.name.name}",
                     poet.getPgEnumByLabel,
                     elementType.name.typeName,
+                    poet.toDbObject,
                     *postArgs,
                 )
 
@@ -82,12 +83,13 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                 name = %S,
                 sql = %S,
                 fromDb = { %T<%T>(it as String) },
-                toDb = { it.toPgObject() },
+                toDb = { it.%T() },
             )$postfix""".trimIndent(),
             columnName,
             "${type.name.schema.schemaName}.${type.name.name}",
             poet.getPgEnumByLabel,
             type.name.typeName,
+            poet.toDbObject,
             *postArgs
         )
 

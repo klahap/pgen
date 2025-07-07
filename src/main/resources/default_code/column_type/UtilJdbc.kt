@@ -9,3 +9,8 @@ internal fun parseFloatArrayFormDb(value: Any): FloatArray {
         else -> error("Cannot convert $value to FloatArray")
     }
 }
+
+fun PgEnum.toDbObject() = PGobject().apply {
+    value = pgEnumLabel
+    type = pgEnumTypeName
+}

@@ -17,6 +17,7 @@ import io.github.klahap.pgen.service.EnvFileService
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.CodeGenContext.Companion.getColumnTypeGroups
 import io.github.klahap.pgen.util.codegen.sync
+import io.github.klahap.pgen.util.codegen.syncCodecs
 import io.github.klahap.pgen.util.parseStatements
 import io.github.klahap.pgen.util.toFlywayOrNull
 import kotlinx.serialization.decodeFromString
@@ -67,6 +68,7 @@ private fun generateSpec(config: Config) {
         typeMappings = specData.flatMap(PgenSpec::typeMappings).sortedBy(TypeMapping::sqlType),
         typeOverwrites = specData.flatMap(PgenSpec::typeOverwrites).sortedBy(TypeOverwrite::sqlColumn),
     )
+
     config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
 
@@ -74,16 +76,19 @@ private fun generateCode(config: Config) {
     if (config.specFilePath.notExists())
         error("Pgen spec file does not exist: '${config.specFilePath}'")
     val spec = yaml.decodeFromString<PgenSpec>(config.specFilePath.readText())
+
     CodeGenContext(
         rootPackageName = config.packageName,
         createDirectoriesForRootPackageName = config.createDirectoriesForRootPackageName,
         typeMappings = spec.typeMappings.associate { it.sqlType to it.valueClass },
         typeOverwrites = spec.typeOverwrites.associate { it.sqlColumn to it.valueClass },
         typeGroups = spec.tables.getColumnTypeGroups(),
+        connectionType = config.connectionType,
     ).run {
         directorySync(config.outputPath) {
             DefaultCodeFile.all(connectionType = config.connectionType).forEach { sync(it) }
             spec.enums.forEach { sync(it) }
+            syncCodecs(spec.enums)
             spec.compositeTypes.forEach { sync(it) }
             spec.domains.filter { it.name !in typeMappings }.forEach { sync(it) }
             spec.tables.map { it.update() }.forEach { sync(it) }

@@ -27,3 +27,42 @@ abstract class RangeColumnType<T : Comparable<T>, R : ClosedRange<T>> : ColumnTy
         else -> error("Retrieved unexpected value of type ${value::class.simpleName}")
     }
 }
+
+
+internal fun String.parseRangeBorderStart(): RawRangeBorder {
+    if (isBlank()) error("invalid range start ''")
+    if (this == "(") return RawRangeBorder.Infinity
+    return RawRangeBorder.Normal(
+        value = trimStart('[', '(').takeIf { it.isNotBlank() } ?: error("invalid range start '$this'"),
+        inclusive = when (first()) {
+            '[' -> true
+            '(' -> false
+            else -> error("Retrieved unexpected range start '$this'")
+        }
+    )
+}
+
+internal fun String.parseRangeBorderEnd(): RawRangeBorder {
+    if (isBlank()) error("invalid range end ''")
+    if (this == ")") return RawRangeBorder.Infinity
+    return RawRangeBorder.Normal(
+        value = trimStart(']', ')').takeIf { it.isNotBlank() } ?: error("invalid range end '$this'"),
+        inclusive = when (last()) {
+            ']' -> true
+            ')' -> false
+            else -> error("Retrieved unexpected range end '$this'")
+        }
+    )
+}
+
+internal fun String.parseRange(): RawRange {
+    if (this == "()") return RawRange.Empty
+    val (startRaw, endRaw) = split(",").takeIf { it.size == 2 }
+        ?: error("invalid range string '$this'")
+    return RawRange.Normal(
+        start = startRaw.parseRangeBorderStart(),
+        end = endRaw.parseRangeBorderEnd(),
+    )
+}
+
+internal fun ClosedRange<*>.toPgRangeString(): String = "[$start,$endInclusive]"

@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.dsl.fileSpec
+import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.SqlObject
 import io.github.klahap.pgen.model.sql.Statement
@@ -32,6 +33,7 @@ object Poet {
 
     val PGobject = ClassName("org.postgresql.util", "PGobject")
 
+    val codecRegistrar = ClassName("io.r2dbc.postgresql.extension", "CodecRegistrar")
 
     private val packageExposed = PackageName("org.jetbrains.exposed.v1")
     private val packageExposedCore = packageExposed.plus("core")
@@ -123,6 +125,24 @@ fun DirectorySyncService.sync(
                 addStatements(obj)
                 block()
             }
+        )
+    )
+}
+
+context(CodeGenContext)
+fun DirectorySyncService.syncCodecs(
+    objs: Collection<Enum>,
+) {
+    if (objs.isEmpty()) return
+    if (connectionType != Config.ConnectionType.R2DBC) return
+    val fileName = "R2dbcCodecs.kt"
+    val packageName = poet.rootPackageName
+    sync(
+        relativePath = fileName,
+        content = fileSpec(
+            packageName = packageName,
+            name = fileName,
+            block = { createCodecCollection(objs) }
         )
     )
 }

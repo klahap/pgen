@@ -2,6 +2,7 @@ package io.github.klahap.pgen.util.codegen
 
 import com.squareup.kotlinpoet.*
 import io.github.klahap.pgen.dsl.*
+import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.util.toSnakeCase
 
@@ -25,4 +26,15 @@ internal fun Enum.toTypeSpecInternal() = buildEnum(this@toTypeSpecInternal.name.
         initializer("%S", pgEnumTypeNameValue)
         addModifiers(KModifier.OVERRIDE)
     }
+
+    if (connectionType == Config.ConnectionType.R2DBC)
+        addCompanionObject {
+            addProperty(name = "codec", type = Poet.codecRegistrar) {
+                initializer(
+                    "%T.builder().withEnum(%S.lowercase(), ${this@toTypeSpecInternal.name.prettyName}::class.java).build()",
+                    ClassName("io.r2dbc.postgresql.codec", "EnumCodec"),
+                    this@toTypeSpecInternal.name.name.lowercase(),
+                )
+            }
+        }
 }

@@ -1,6 +1,7 @@
 package io.github.klahap.pgen.util.codegen
 
 import io.github.klahap.pgen.dsl.PackageName
+import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.KotlinValueClass
 import io.github.klahap.pgen.model.sql.SqlColumnName
@@ -13,6 +14,7 @@ class CodeGenContext(
     val typeMappings: Map<SqlObjectName, KotlinValueClass>,
     typeOverwrites: Map<SqlColumnName, KotlinValueClass>,
     typeGroups: List<Set<SqlColumnName>>,
+    val connectionType: Config.ConnectionType,
 ) {
     val allTypeOverwrites: Map<SqlColumnName, KotlinValueClass> = typeOverwrites.entries.flatMap { (column, clazz) ->
         val group = typeGroups.firstOrNull { it.contains(column) } ?: setOf(column)
@@ -66,6 +68,7 @@ class CodeGenContext(
         val getColumnWithAlias = packageUtil.className("get")
         val pgEnum = packageCustomColumn.className("PgEnum")
         val getPgEnumByLabel = packageCustomColumn.className("getPgEnumByLabel")
+        val toDbObject = packageCustomColumn.className("toDbObject")
     }
 
     companion object {

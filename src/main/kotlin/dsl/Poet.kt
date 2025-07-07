@@ -56,6 +56,9 @@ fun FileSpec.Builder.addClass(
     block: TypeSpec.Builder.() -> Unit,
 ) = addType(buildClass(name = name, block = block))
 
+fun FileSpec.Builder.addProperty(name: String, type: TypeName, block: PropertySpec.Builder.() -> Unit) =
+    addProperty(PropertySpec.builder(name = name, type = type).apply(block).build())
+
 fun TypeSpec.Builder.addProperty(name: String, type: TypeName, block: PropertySpec.Builder.() -> Unit) =
     addProperty(PropertySpec.builder(name = name, type = type).apply(block).build())
 

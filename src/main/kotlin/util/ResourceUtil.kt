@@ -23,15 +23,17 @@ data class DefaultCodeFile(
         fun all(connectionType: Config.ConnectionType) = sequence {
             yield(listOf("column_type"), "DefaultJsonColumnType.kt")
             yield(listOf("column_type"), "DomainColumnType.kt")
-            yield(listOf("column_type"), "IntMultiRange.kt")
-            yield(listOf("column_type"), "IntRange.kt")
-            yield(listOf("column_type"), "MultiRange.kt")
-            yield(listOf("column_type"), "MultiRangeColumnType.kt")
             yield(listOf("column_type"), "PgStructUtil.kt")
-            yield(listOf("column_type"), "RangeColumnType.kt")
             yield(listOf("column_type"), "UnconstrainedNumericColumnType.kt")
             yield(listOf("column_type"), "Util.kt")
             yield(listOf("column_type"), "PgVectorColumnType.kt")
+            if (connectionType == Config.ConnectionType.JDBC) {
+                yield(listOf("column_type"), "IntMultiRange.kt")
+                yield(listOf("column_type"), "IntRange.kt")
+                yield(listOf("column_type"), "MultiRange.kt")
+                yield(listOf("column_type"), "MultiRangeColumnType.kt")
+                yield(listOf("column_type"), "RangeColumnType.kt")
+            }
             yield(listOf("util"), "BatchUpdateStatementDsl.kt")
             yield(listOf("util"), "Dsl.kt")
             yield(listOf("util"), "ConnectionConfig.kt")

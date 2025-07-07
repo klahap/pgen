@@ -16,3 +16,6 @@ class Int8MultiRangeColumnType : MultiRangeColumnType<Long>() {
 
 fun Table.int4MultiRange(name: String): Column<MultiRange<Int>> = registerColumn(name, Int4MultiRangeColumnType())
 fun Table.int8MultiRange(name: String): Column<MultiRange<Long>> = registerColumn(name, Int8MultiRangeColumnType())
+
+internal fun List<RawRange>.toInt4MultiRange(): MultiRange<Int> = MultiRange(map { it.toInt4Range() }.toSet())
+internal fun List<RawRange>.toInt8MultiRange(): MultiRange<Long> = MultiRange(map { it.toInt8Range() }.toSet())

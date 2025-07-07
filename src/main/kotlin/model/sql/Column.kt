@@ -59,10 +59,19 @@ data class Column(
 
         @Serializable
         sealed interface NonPrimitive : Type {
+            val primitiveElementTypeOrNull: Primitive? get() = null
+
             @Serializable
             @SerialName("array")
             data class Array(val elementType: Type) : NonPrimitive {
                 override val sqlType get() = "${elementType.sqlType}[]"
+
+                override val primitiveElementTypeOrNull: Primitive?
+                    get() = when (elementType) {
+                        is Primitive -> elementType
+                        is Array -> elementType.primitiveElementTypeOrNull
+                        else -> null
+                    }
             }
 
             @Serializable

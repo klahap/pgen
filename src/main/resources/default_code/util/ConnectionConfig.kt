@@ -29,7 +29,7 @@ sealed interface ConnectionConfig {
     private fun url(creds: String?): String =
         "${protocol.value}:$subProtocol://${creds?.let { "$it@" } ?: ""}$host:$port/$database$queryStr"
 
-    fun toR2dbcPool(block: R2dbcPool.Builder.() -> Unit): R2dbcPool = R2dbcPool.Builder(
+    fun toR2dbcPool(block: R2dbcPool.Builder.() -> Unit = {}): R2dbcPool = R2dbcPool.Builder(
         subProtocol = subProtocol,
         host = host,
         port = port,
@@ -37,7 +37,7 @@ sealed interface ConnectionConfig {
         query = query.toMutableMap(),
     ).apply(block).build()
 
-    fun toR2dbc(block: R2dbc.Builder.() -> Unit): R2dbc = R2dbc.Builder(
+    fun toR2dbc(block: R2dbc.Builder.() -> Unit = {}): R2dbc = R2dbc.Builder(
         subProtocol = subProtocol,
         host = host,
         port = port,
@@ -45,7 +45,7 @@ sealed interface ConnectionConfig {
         query = query.toMutableMap(),
     ).apply(block).build()
 
-    fun toJdbc(block: Jdbc.Builder.() -> Unit): Jdbc = Jdbc.Builder(
+    fun toJdbc(block: Jdbc.Builder.() -> Unit = {}): Jdbc = Jdbc.Builder(
         subProtocol = subProtocol,
         host = host,
         port = port,

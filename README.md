@@ -101,7 +101,7 @@ object Users : Table("users") {
         name = "status",
         sql = "status",
         fromDb = { getPgEnumByLabel(it as String) },
-        toDb = { it.toPgObject() },
+        toDb = { it.toDbObject() },
     )
 
     override val primaryKey: Table.PrimaryKey = PrimaryKey(id, name = "users_pkey")
