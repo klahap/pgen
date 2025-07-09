@@ -17,7 +17,11 @@ internal fun Enum.toTypeSpecInternal() = buildEnum(this@toTypeSpecInternal.name.
         }
     }
     this@toTypeSpecInternal.fields.forEach { field ->
-        addEnumConstant(field.toSnakeCase(uppercase = true)) {
+        val enumName = when (connectionType) {
+            Config.ConnectionType.JDBC -> field.toSnakeCase(uppercase = true)
+            Config.ConnectionType.R2DBC -> field
+        }
+        addEnumConstant(enumName) {
             addSuperclassConstructorParameter("pgEnumLabel = %S", field)
         }
     }
