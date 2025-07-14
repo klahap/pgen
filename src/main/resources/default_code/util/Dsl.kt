@@ -14,7 +14,19 @@ operator fun <T> ResultRow.get(column: Column<T>, alias: Alias<*>?): T = when (a
 }
 
 fun compoundAnd(con: Op<Boolean>?, vararg cons: Op<Boolean>?): Op<Boolean> =
-    (listOf(con) + cons).filterNotNull().compoundAnd()
+    (listOf(con) + cons).filterNotNull().let {
+        when (it.size) {
+            0 -> Op.TRUE
+            1 -> it.single()
+            else -> it.compoundAnd()
+        }
+    }
 
 fun compoundOr(con: Op<Boolean>?, vararg cons: Op<Boolean>?): Op<Boolean> =
-    (listOf(con) + cons).filterNotNull().compoundOr()
+    (listOf(con) + cons).filterNotNull().let {
+        when (it.size) {
+            0 -> Op.TRUE
+            1 -> it.single()
+            else -> it.compoundOr()
+        }
+    }
