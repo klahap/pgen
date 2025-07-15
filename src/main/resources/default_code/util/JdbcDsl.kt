@@ -14,6 +14,15 @@ import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction as jdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.core.ArrayColumnType
+import org.jetbrains.exposed.v1.core.ColumnSet
+import org.jetbrains.exposed.v1.core.ColumnType
+import org.jetbrains.exposed.v1.core.CustomFunction
+import org.jetbrains.exposed.v1.core.Expression
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.jdbc.Query
+import org.jetbrains.exposed.v1.jdbc.select
+
 
 fun Database.Companion.connect(
     connectionConfig: ConnectionConfig.Jdbc,
@@ -76,3 +85,18 @@ fun <T : Table> T.deleteSingleOrThrow(
         else -> throw MultipleEntitiesException("multiple rows affected: $countDelete")
     }
 }
+
+fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
+    select(buildList(builder))
+
+fun <T : Any> arrayAgg(
+    elementColumnType: ColumnType<T>,
+    exp: Expression<out T?>,
+): CustomFunction<List<T?>> = CustomFunction<List<T?>>(
+    functionName = "array_agg",
+    columnType = ArrayColumnType(elementColumnType),
+    exp,
+)
+
+fun arrayAgg(exp: Expression<out String?>): CustomFunction<List<String?>> =
+    arrayAgg(TextColumnType(), exp)
