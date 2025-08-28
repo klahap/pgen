@@ -31,7 +31,7 @@ kotlin {
         freeCompilerArgs.add("-Xjsr305=strict")
         freeCompilerArgs.add("-Xcontext-parameters")
         jvmTarget.set(JvmTarget.JVM_21)
-        languageVersion.set(KotlinVersion.KOTLIN_2_2)
+        languageVersion.set(KotlinVersion.KOTLIN_2_1)
     }
 }
 

@@ -46,7 +46,7 @@ internal fun CompositeType.toTypeSpecInternal() = buildDataClass(this@toTypeSpec
                     add("is String -> %T.parseFields(value)\n", c.poet.pgStructField)
                     add(
                         "else -> error(\"Unexpected value for " +
-                                $$"$${this@toTypeSpecInternal.name.prettyName}: $value\")\n"
+                                "${this@toTypeSpecInternal.name.prettyName}: ${'$'}value\")\n"
                     )
                     endControlFlow()
                     add(
