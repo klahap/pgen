@@ -29,7 +29,7 @@ data class SchemaName(val dbName: DbName, val schemaName: String) : Comparable<S
             ?: schemaName.compareTo(other.schemaName)
 }
 
-sealed interface SqlObject: Comparable<SqlObject> {
+sealed interface SqlObject : Comparable<SqlObject> {
     val name: SqlObjectName
     override fun compareTo(other: SqlObject) = name.compareTo(other.name)
 }
@@ -43,11 +43,11 @@ data class SqlStatementName(
     val prettyName get() = name.toCamelCase(capitalized = false)
     val prettyResultClassName get() = name.toCamelCase(capitalized = true) + "Result"
 
-    context(CodeGenContext)
+    context(c: CodeGenContext)
     val packageName
-        get() = PackageName("${poet.rootPackageName}.db.${dbName}")
+        get() = PackageName("${c.poet.rootPackageName}.db.${dbName}")
 
-    context(CodeGenContext)
+    context(c: CodeGenContext)
     val typeName
         get() = ClassName(packageName.name, prettyName)
 
@@ -64,11 +64,15 @@ data class SqlObjectName(
 
     val prettyName get() = name.toCamelCase(capitalized = true)
 
-    context(CodeGenContext)
+    context(c: CodeGenContext)
     val packageName
-        get() = PackageName("${poet.rootPackageName}.db.${schema.dbName}.${schema.schemaName.makeDifferent(kotlinKeywords)}")
+        get() = PackageName(
+            "${c.poet.rootPackageName}.db.${schema.dbName}.${
+                schema.schemaName.makeDifferent(kotlinKeywords)
+            }"
+        )
 
-    context(CodeGenContext)
+    context(c: CodeGenContext)
     val typeName
         get() = ClassName(packageName.name, prettyName)
 

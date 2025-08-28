@@ -85,7 +85,7 @@ data class Column(
             data class Composite(val name: SqlObjectName) : NonPrimitive {
                 override val sqlType get() = "${name.schema.schemaName}.${name.name}"
 
-                context(CodeGenContext)
+                context(c: CodeGenContext)
                 fun getColumnTypeTypeName() = ClassName("${name.packageName}", "${name.prettyName}.ColumnType")
             }
 
@@ -107,15 +107,15 @@ data class Column(
             }
 
             sealed interface DomainType : NonPrimitive {
-                context(CodeGenContext)
+                context(c: CodeGenContext)
                 fun getDomainTypename(): TypeName
 
-                context(CodeGenContext)
+                context(c: CodeGenContext)
                 fun getValueClass(): KotlinValueClass
 
                 val originalType: Type
 
-                context(CodeGenContext)
+                context(c: CodeGenContext)
                 val parserFunction: String
                     get() = getValueClass().parseFunction?.let { ".$it" } ?: ""
             }
@@ -128,11 +128,11 @@ data class Column(
             ) : SqlObject, DomainType {
                 override val sqlType get() = "${name.schema.schemaName}.${name.name}"
 
-                context(CodeGenContext)
-                override fun getDomainTypename(): TypeName = typeMappings[name]?.name?.poet ?: name.typeName
+                context(c: CodeGenContext)
+                override fun getDomainTypename(): TypeName = c.typeMappings[name]?.name?.poet ?: name.typeName
 
-                context(CodeGenContext)
-                override fun getValueClass(): KotlinValueClass = typeMappings[name] ?: KotlinValueClass(
+                context(c: CodeGenContext)
+                override fun getValueClass(): KotlinValueClass = c.typeMappings[name] ?: KotlinValueClass(
                     name = KotlinClassName(
                         packageName = name.packageName.name,
                         className = name.prettyName
@@ -149,10 +149,10 @@ data class Column(
             ) : DomainType {
                 override val sqlType: String get() = originalType.sqlType
 
-                context(CodeGenContext)
+                context(c: CodeGenContext)
                 override fun getDomainTypename(): TypeName = valueClass.name.poet
 
-                context(CodeGenContext)
+                context(c: CodeGenContext)
                 override fun getValueClass(): KotlinValueClass = valueClass
             }
         }

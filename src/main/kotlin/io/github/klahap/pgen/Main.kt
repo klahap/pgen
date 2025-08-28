@@ -22,8 +22,12 @@ import io.github.klahap.pgen.util.parseStatements
 import io.github.klahap.pgen.util.toFlywayOrNull
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import org.gradle.api.Plugin
 import org.gradle.api.Project
-import kotlin.io.path.*
+import kotlin.io.path.createParentDirectories
+import kotlin.io.path.notExists
+import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 
 private val yaml = Yaml(
@@ -150,7 +154,8 @@ fun main() {
     generate(config)
 }
 
-class Plugin : org.gradle.api.Plugin<Project> {
+@Suppress("unused")
+class Plugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         val configBuilder = project.extensions.create("pgen", Config.Builder::class.java)

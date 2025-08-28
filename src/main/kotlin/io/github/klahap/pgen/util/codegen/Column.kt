@@ -6,7 +6,7 @@ import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.model.sql.Column
 
 
-context(CodeGenContext)
+context(_: CodeGenContext)
 private fun Column.getDefaultExpression(): Pair<String, List<Any>>? = when (type) {
     Column.Type.Primitive.TIMESTAMP -> when (default) {
         "now()" -> ".defaultExpression(%T)" to listOf(Poet.defaultExpTimestamp)
@@ -34,7 +34,7 @@ private fun Column.getDefaultExpression(): Pair<String, List<Any>>? = when (type
     else -> null
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: List<Any>) {
     val columnName = column.name.value
     var postfix = postfix
@@ -47,7 +47,7 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
     when (val type = column.type) {
         is Column.Type.NonPrimitive.Array -> {
             when (val elementType = type.elementType) {
-                is Column.Type.NonPrimitive.Enum -> initializer(
+                is Column.Type.NonPrimitive.Enum -> @Suppress("SpreadOperator") initializer(
                     """
                     |%T<%T>(
                     |    name = %S,
@@ -55,29 +55,29 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
                     |    fromDb = { %T<%T>(it as String) },
                     |    toDb = { it.%T() },
                     |)$postfix""".trimMargin(),
-                    poet.customEnumerationArray,
+                    c.poet.customEnumerationArray,
                     type.getTypeName(),
                     columnName,
                     "${elementType.name.schema.schemaName}.${elementType.name.name}",
-                    poet.getPgEnumByLabel,
+                    c.poet.getPgEnumByLabel,
                     elementType.name.typeName,
-                    poet.toDbObject,
+                    c.poet.toDbObject,
                     *postArgs,
                 )
 
-                is Column.Type.NonPrimitive.Composite -> initializer(
+                is Column.Type.NonPrimitive.Composite -> @Suppress("SpreadOperator") initializer(
                     "array<%T>(name = %S, columnType = %T)$postfix",
                     type.getTypeName(), columnName, elementType.getColumnTypeTypeName(), *postArgs
                 )
 
-                else -> initializer(
+                else -> @Suppress("SpreadOperator") initializer(
                     "array<%T>(name = %S)$postfix",
                     type.getTypeName(), columnName, *postArgs
                 )
             }
         }
 
-        is Column.Type.NonPrimitive.Enum -> initializer(
+        is Column.Type.NonPrimitive.Enum -> @Suppress("SpreadOperator") initializer(
             """
             customEnumeration(
                 name = %S,
@@ -87,27 +87,25 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
             )$postfix""".trimIndent(),
             columnName,
             "${type.name.schema.schemaName}.${type.name.name}",
-            poet.getPgEnumByLabel,
+            c.poet.getPgEnumByLabel,
             type.name.typeName,
-            poet.toDbObject,
+            c.poet.toDbObject,
             *postArgs
         )
 
-        is Column.Type.NonPrimitive.Composite -> initializer(
+        is Column.Type.NonPrimitive.Composite -> @Suppress("SpreadOperator") initializer(
             "registerColumn(name = %S, type = %T)$postfix",
-            columnName,
-            type.getColumnTypeTypeName(),
-            *postArgs,
+            columnName, type.getColumnTypeTypeName(), *postArgs,
         )
 
-        is Column.Type.NonPrimitive.DomainType -> initializer(
+        is Column.Type.NonPrimitive.DomainType -> @Suppress("SpreadOperator") initializer(
             """
             %T<%T>(
                 name = %S,
                 sqlType = %S,
                 builder = { %T${type.parserFunction}(it as %T) },
             )$postfix""".trimIndent(),
-            poet.domainType,
+            c.poet.domainType,
             type.getDomainTypename(),
             columnName,
             type.sqlType,
@@ -116,86 +114,136 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
             *postArgs
         )
 
-        is Column.Type.NonPrimitive.PgVector -> initializer(
+        is Column.Type.NonPrimitive.PgVector -> @Suppress("SpreadOperator") initializer(
             """
             %T(
                 name = %S,
                 schema = %S,
             )$postfix""".trimIndent(),
-            poet.packageCustomColumn.className("pgVector"),
+            c.poet.packageCustomColumn.className("pgVector"),
             columnName,
             type.schema,
             *postArgs
         )
 
-        Column.Type.Primitive.INT8 -> initializer("long(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.BOOL -> initializer("bool(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.BINARY -> initializer("binary(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.VARCHAR -> initializer("text(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.DATE -> initializer("%T(name = %S)$postfix", Poet.date, columnName, *postArgs)
-        Column.Type.Primitive.INTERVAL -> initializer("duration(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.INT4RANGE -> initializer(
-            "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int4RangeColumnType, *postArgs
+        Column.Type.Primitive.INT8 -> @Suppress("SpreadOperator") initializer(
+            "long(name = %S)$postfix",
+            columnName, *postArgs
         )
 
-        Column.Type.Primitive.INT8RANGE -> initializer(
-            "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int8RangeColumnType, *postArgs
+        Column.Type.Primitive.BOOL -> @Suppress("SpreadOperator") initializer(
+            "bool(name = %S)$postfix",
+            columnName, *postArgs
         )
 
-        Column.Type.Primitive.INT4MULTIRANGE -> initializer(
-            "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int4MultiRangeColumnType, *postArgs
+        Column.Type.Primitive.BINARY -> @Suppress("SpreadOperator") initializer(
+            "binary(name = %S)$postfix",
+            columnName, *postArgs
         )
 
-        Column.Type.Primitive.INT8MULTIRANGE -> initializer(
-            "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.int8MultiRangeColumnType, *postArgs
+        Column.Type.Primitive.VARCHAR -> @Suppress("SpreadOperator") initializer(
+            "text(name = %S)$postfix",
+            columnName, *postArgs
         )
 
-        Column.Type.Primitive.INT4 -> initializer("integer(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.FLOAT4 -> initializer("float(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.FLOAT8 -> initializer("double(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.JSON -> initializer(
+        Column.Type.Primitive.DATE -> @Suppress("SpreadOperator") initializer(
+            "%T(name = %S)$postfix",
+            Poet.date, columnName, *postArgs
+        )
+
+        Column.Type.Primitive.INTERVAL -> @Suppress("SpreadOperator") initializer(
+            "duration(name = %S)$postfix",
+            columnName, *postArgs
+        )
+
+        Column.Type.Primitive.INT4RANGE -> @Suppress("SpreadOperator") initializer(
+            "registerColumn(name = %S, type = %T())$postfix",
+            columnName, c.poet.int4RangeColumnType, *postArgs
+        )
+
+        Column.Type.Primitive.INT8RANGE -> @Suppress("SpreadOperator") initializer(
+            "registerColumn(name = %S, type = %T())$postfix",
+            columnName, c.poet.int8RangeColumnType, *postArgs
+        )
+
+        Column.Type.Primitive.INT4MULTIRANGE -> @Suppress("SpreadOperator") initializer(
+            "registerColumn(name = %S, type = %T())$postfix",
+            columnName, c.poet.int4MultiRangeColumnType, *postArgs
+        )
+
+        Column.Type.Primitive.INT8MULTIRANGE -> @Suppress("SpreadOperator") initializer(
+            "registerColumn(name = %S, type = %T())$postfix",
+            columnName, c.poet.int8MultiRangeColumnType, *postArgs
+        )
+
+        Column.Type.Primitive.INT4 -> @Suppress("SpreadOperator") initializer(
+            "integer(name = %S)$postfix",
+            columnName, *postArgs
+        )
+
+        Column.Type.Primitive.FLOAT4 -> @Suppress("SpreadOperator") initializer(
+            "float(name = %S)$postfix",
+            columnName, *postArgs
+        )
+
+        Column.Type.Primitive.FLOAT8 -> @Suppress("SpreadOperator") initializer(
+            "double(name = %S)$postfix",
+            columnName, *postArgs
+        )
+
+        Column.Type.Primitive.JSON -> @Suppress("SpreadOperator") initializer(
             "%T<%T>(name = %S, serialize = %T)$postfix",
             Poet.jsonColumn, Poet.jsonElement, columnName, Poet.json, *postArgs
         )
 
-        Column.Type.Primitive.JSONB -> initializer(
+        Column.Type.Primitive.JSONB -> @Suppress("SpreadOperator") initializer(
             "%T<%T>(name = %S, jsonConfig = %T)$postfix",
             Poet.jsonColumn, Poet.jsonElement, columnName, Poet.json, *postArgs
         )
 
-        is Column.Type.NonPrimitive.Numeric -> initializer(
+        is Column.Type.NonPrimitive.Numeric -> @Suppress("SpreadOperator") initializer(
             "decimal(name = %S, precision = ${type.precision}, scale = ${type.scale})$postfix",
             columnName, *postArgs
         )
 
-        Column.Type.Primitive.INT2 -> initializer("short(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.TEXT -> initializer("text(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.TIME -> initializer("%T(name = %S)$postfix", Poet.time, columnName, *postArgs)
-        Column.Type.Primitive.TIMESTAMP -> initializer(
-            "%T(name = %S)$postfix",
-            Poet.timestamp,
-            columnName,
-            *postArgs
+        Column.Type.Primitive.INT2 -> @Suppress("SpreadOperator") initializer(
+            "short(name = %S)$postfix",
+            columnName, *postArgs
         )
 
-        Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> initializer(
+        Column.Type.Primitive.TEXT -> @Suppress("SpreadOperator") initializer(
+            "text(name = %S)$postfix",
+            columnName, *postArgs
+        )
+
+        Column.Type.Primitive.TIME -> @Suppress("SpreadOperator") initializer(
+            "%T(name = %S)$postfix",
+            Poet.time, columnName, *postArgs
+        )
+
+        Column.Type.Primitive.TIMESTAMP -> @Suppress("SpreadOperator") initializer(
+            "%T(name = %S)$postfix",
+            Poet.timestamp, columnName, *postArgs
+        )
+
+        Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> @Suppress("SpreadOperator") initializer(
             "%T(name = %S)$postfix",
             Poet.timestampWithTimeZone, columnName, *postArgs
         )
 
-        Column.Type.Primitive.UUID -> initializer("uuid(name = %S)$postfix", columnName, *postArgs)
-        Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> initializer(
+        Column.Type.Primitive.UUID -> @Suppress("SpreadOperator") initializer(
+            "uuid(name = %S)$postfix",
+            columnName, *postArgs
+        )
+
+        Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> @Suppress("SpreadOperator") initializer(
             "registerColumn(name = %S, type = %T())$postfix",
-            columnName, poet.unconstrainedNumericColumnType, *postArgs
+            columnName, c.poet.unconstrainedNumericColumnType, *postArgs
         )
     }
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 internal fun Column.getColumnTypeName() = when (type) {
     is Column.Type.NonPrimitive.Array -> List::class.asTypeName()
         .parameterizedBy(type.getTypeName())

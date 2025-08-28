@@ -76,7 +76,7 @@ object Poet {
     val jsonColumn = packageExposedJson.className("json")
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 private fun SqlObject.toTypeSpec() = when (this) {
     is Enum -> toTypeSpecInternal()
     is Table -> toTypeSpecInternal()
@@ -84,13 +84,13 @@ private fun SqlObject.toTypeSpec() = when (this) {
     is CompositeType -> toTypeSpecInternal()
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 fun FileSpec.Builder.add(obj: SqlObject) {
     val spec = obj.toTypeSpec()
     addType(spec)
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 fun DirectorySyncService.sync(
     obj: SqlObject,
     block: FileSpec.Builder.() -> Unit = {},
@@ -109,7 +109,7 @@ fun DirectorySyncService.sync(
     )
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 fun DirectorySyncService.sync(
     obj: Collection<Statement>,
     block: FileSpec.Builder.() -> Unit = {},
@@ -129,14 +129,13 @@ fun DirectorySyncService.sync(
     )
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 fun DirectorySyncService.syncCodecs(
     objs: Collection<Enum>,
 ) {
-    if (objs.isEmpty()) return
-    if (connectionType != Config.ConnectionType.R2DBC) return
+    if (c.connectionType != Config.ConnectionType.R2DBC) return
     val fileName = "R2dbcCodecs.kt"
-    val packageName = poet.rootPackageName
+    val packageName = c.poet.rootPackageName
     sync(
         relativePath = fileName,
         content = fileSpec(
@@ -147,7 +146,7 @@ fun DirectorySyncService.syncCodecs(
     )
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 fun DirectorySyncService.sync(codeFile: DefaultCodeFile) {
     sync(
         relativePath = codeFile.relativePath,
@@ -155,8 +154,8 @@ fun DirectorySyncService.sync(codeFile: DefaultCodeFile) {
     )
 }
 
-context(CodeGenContext)
-fun PackageName.toRelativePath() = if (createDirectoriesForRootPackageName)
+context(c: CodeGenContext)
+fun PackageName.toRelativePath() = if (c.createDirectoriesForRootPackageName)
     name.replace(".", "/")
 else
-    name.removePrefix(poet.rootPackageName.name).trimStart('.').replace(".", "/")
+    name.removePrefix(c.poet.rootPackageName.name).trimStart('.').replace(".", "/")

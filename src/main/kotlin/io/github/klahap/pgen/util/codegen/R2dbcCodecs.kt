@@ -7,14 +7,14 @@ import io.github.klahap.pgen.dsl.addProperty
 import io.github.klahap.pgen.model.sql.Enum
 
 
-context(CodeGenContext) fun FileSpec.Builder.createCodecCollection(
+context(c: CodeGenContext) fun FileSpec.Builder.createCodecCollection(
     objs: Collection<Enum>,
 ) {
     this.addProperty(
         name = "allR2dbcCodecs",
         type = List::class.asTypeName().parameterizedBy(Poet.codecRegistrar)
     ) {
-        initializer(
+        @Suppress("SpreadOperator") initializer(
             objs.joinToString(prefix = "listOf(", postfix = ")", separator = ", ") { "%T.codec" },
             *(objs.map { it.name.typeName }.toTypedArray()),
         )

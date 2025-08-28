@@ -13,7 +13,7 @@ import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.CompositeType
 
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 internal fun CompositeType.toTypeSpecInternal() = buildDataClass(this@toTypeSpecInternal.name.prettyName) {
     primaryConstructor {
         this@toTypeSpecInternal.columns.forEach { column ->
@@ -42,9 +42,12 @@ internal fun CompositeType.toTypeSpecInternal() = buildDataClass(this@toTypeSpec
                 returns(this@toTypeSpecInternal.name.typeName)
                 addCode {
                     beginControlFlow("val fields = when (value)")
-                    add("is PGobject -> %T.parseFields(value.value ?: \"\")\n", poet.pgStructField)
-                    add("is String -> %T.parseFields(value)\n", poet.pgStructField)
-                    add("else -> error(\"Unexpected value for ${this@toTypeSpecInternal.name.prettyName}: ${'$'}value\")\n")
+                    add("is PGobject -> %T.parseFields(value.value ?: \"\")\n", c.poet.pgStructField)
+                    add("is String -> %T.parseFields(value)\n", c.poet.pgStructField)
+                    add(
+                        "else -> error(\"Unexpected value for " +
+                                $$"$${this@toTypeSpecInternal.name.prettyName}: $value\")\n"
+                    )
                     endControlFlow()
                     add(
                         "if (fields.size != ${this@toTypeSpecInternal.columns.size}) error(%S)\n",
@@ -72,7 +75,7 @@ internal fun CompositeType.toTypeSpecInternal() = buildDataClass(this@toTypeSpec
                     }
                     endControlFlow()
                     beginControlFlow("return %T().apply", Poet.PGobject)
-                    add("this.value = dataStr.%T()\n", poet.pgStructFieldJoin)
+                    add("this.value = dataStr.%T()\n", c.poet.pgStructFieldJoin)
                     add("this.type = sqlType()\n")
                     endControlFlow()
                 }
@@ -81,7 +84,7 @@ internal fun CompositeType.toTypeSpecInternal() = buildDataClass(this@toTypeSpec
     )
 }
 
-context(CodeGenContext)
+context(c: CodeGenContext)
 private fun CodeBlock.Builder.addPgFieldConverter(type: Column.Type) = when (type) {
     Column.Type.Primitive.BOOL,
     Column.Type.Primitive.DATE,
@@ -104,14 +107,14 @@ private fun CodeBlock.Builder.addPgFieldConverter(type: Column.Type) = when (typ
     is Column.Type.NonPrimitive.Reference ->
         throw NotImplementedError("Unsupported composite field type ${type.sqlType}")
 
-    is Column.Type.NonPrimitive.Enum -> add("%T.Enum(%T::class)", poet.pgStructFieldConverter, type.getTypeName())
-    is Column.Type.NonPrimitive.Numeric -> add("%T.BigDecimal", poet.pgStructFieldConverter)
-    Column.Type.Primitive.INT2 -> add("%T.Small", poet.pgStructFieldConverter)
-    Column.Type.Primitive.INT4 -> add("%T.Int", poet.pgStructFieldConverter)
-    Column.Type.Primitive.INT8 -> add("%T.Long", poet.pgStructFieldConverter)
-    Column.Type.Primitive.TEXT -> add("%T.String", poet.pgStructFieldConverter)
-    Column.Type.Primitive.UUID -> add("%T.Uuid", poet.pgStructFieldConverter)
-    Column.Type.Primitive.VARCHAR -> add("%T.String", poet.pgStructFieldConverter)
-    Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> add("%T.BigDecimal", poet.pgStructFieldConverter)
-    Column.Type.Primitive.BINARY -> add("%T.ByteArray", poet.pgStructFieldConverter)
+    is Column.Type.NonPrimitive.Enum -> add("%T.Enum(%T::class)", c.poet.pgStructFieldConverter, type.getTypeName())
+    is Column.Type.NonPrimitive.Numeric -> add("%T.BigDecimal", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.INT2 -> add("%T.Small", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.INT4 -> add("%T.Int", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.INT8 -> add("%T.Long", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.TEXT -> add("%T.String", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.UUID -> add("%T.Uuid", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.VARCHAR -> add("%T.String", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> add("%T.BigDecimal", c.poet.pgStructFieldConverter)
+    Column.Type.Primitive.BINARY -> add("%T.ByteArray", c.poet.pgStructFieldConverter)
 }

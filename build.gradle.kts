@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     id("com.gradle.plugin-publish") version "1.2.1"
-    kotlin("jvm") version "2.0.20"
-    kotlin("plugin.serialization") version "2.0.20"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 val groupStr = "io.github.klahap.pgen"
@@ -18,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.squareup:kotlinpoet:2.0.0")
+    implementation("com.squareup:kotlinpoet:2.2.0")
     implementation("org.postgresql:postgresql:42.7.4")
     implementation("org.flywaydb:flyway-core:11.6.0")
     implementation("org.flywaydb:flyway-database-postgresql:11.6.0")
@@ -29,9 +29,9 @@ dependencies {
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xjsr305=strict")
-        freeCompilerArgs.add("-Xcontext-receivers")
+        freeCompilerArgs.add("-Xcontext-parameters")
         jvmTarget.set(JvmTarget.JVM_21)
-        languageVersion.set(KotlinVersion.KOTLIN_2_0)
+        languageVersion.set(KotlinVersion.KOTLIN_2_2)
     }
 }
 
