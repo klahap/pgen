@@ -8,6 +8,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.Expression
+import org.jetbrains.exposed.v1.core.ColumnSet
+import org.jetbrains.exposed.v1.r2dbc.Query
+import org.jetbrains.exposed.v1.r2dbc.select
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.R2dbcTransaction
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction as r2dbcSuspendTransaction
@@ -19,6 +23,8 @@ import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
 
 
+fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
+    select(buildList(builder))
 fun R2dbcDatabase.Companion.connect(
     config: ConnectionConfig.Async,
     username: String? = null,

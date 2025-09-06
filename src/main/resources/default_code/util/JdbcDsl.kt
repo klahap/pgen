@@ -88,15 +88,3 @@ fun <T : Table> T.deleteSingleOrThrow(
 
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
     select(buildList(builder))
-
-fun <T : Any> arrayAgg(
-    elementColumnType: ColumnType<T>,
-    exp: Expression<out T?>,
-): CustomFunction<List<T?>> = CustomFunction<List<T?>>(
-    functionName = "array_agg",
-    columnType = ArrayColumnType(elementColumnType),
-    exp,
-)
-
-fun arrayAgg(exp: Expression<out String?>): CustomFunction<List<String?>> =
-    arrayAgg(TextColumnType(), exp)

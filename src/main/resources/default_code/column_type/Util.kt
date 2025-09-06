@@ -66,3 +66,7 @@ internal fun parseFloatArray(data: String): FloatArray {
     val cleaned = data.trim().removePrefix("[").removeSuffix("]")
     return cleaned.split(",").map { it.trim().toFloat() }.toFloatArray()
 }
+
+interface StringLike {
+    val value: String
+}

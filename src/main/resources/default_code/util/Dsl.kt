@@ -6,6 +6,15 @@ import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.compoundAnd
 import org.jetbrains.exposed.v1.core.compoundOr
+import org.jetbrains.exposed.v1.core.ArrayColumnType
+import org.jetbrains.exposed.v1.core.ColumnType
+import org.jetbrains.exposed.v1.core.CustomFunction
+import org.jetbrains.exposed.v1.core.Expression
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.ComparisonOp
+import org.jetbrains.exposed.v1.core.ExpressionWithColumnType
+import org.jetbrains.exposed.v1.core.QueryParameter
+import default_code.column_type.StringLike
 
 
 operator fun <T> ResultRow.get(column: Column<T>, alias: Alias<*>?): T = when (alias) {
@@ -30,3 +39,29 @@ fun compoundOr(con: Op<Boolean>?, vararg cons: Op<Boolean>?): Op<Boolean> =
             else -> it.compoundOr()
         }
     }
+
+fun <T : Any> arrayAgg(
+    elementColumnType: ColumnType<T>,
+    exp: Expression<out T?>,
+): CustomFunction<List<T?>> = CustomFunction<List<T?>>(
+    functionName = "array_agg",
+    columnType = ArrayColumnType(elementColumnType),
+    exp,
+)
+
+fun arrayAgg(exp: Expression<out String?>): CustomFunction<List<String?>> =
+    arrayAgg(TextColumnType(), exp)
+
+class LikeOp(expr1: Expression<*>, expr2: Expression<*>) : ComparisonOp(expr1, expr2, "LIKE")
+class InsensitiveLikeOp(expr1: Expression<*>, expr2: Expression<*>) : ComparisonOp(expr1, expr2, "ILIKE")
+
+infix fun <T : StringLike?> ExpressionWithColumnType<T>.like(pattern: String): Op<Boolean> =
+    LikeOp(this, QueryParameter(pattern, TextColumnType()))
+
+@JvmName("iLikeString")
+infix fun <T : String?> ExpressionWithColumnType<T>.iLike(pattern: T): Op<Boolean> =
+    InsensitiveLikeOp(this, QueryParameter(pattern, columnType))
+
+@JvmName("iLikeStringLike")
+infix fun <T : StringLike?> ExpressionWithColumnType<T>.iLike(pattern: String): Op<Boolean> =
+    InsensitiveLikeOp(this, QueryParameter(pattern, TextColumnType()))
