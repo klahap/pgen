@@ -67,24 +67,5 @@ fun <T> Database.transactionFlow(
     }
 }
 
-fun Iterable<ResultRow>.singleRowOrThrow() = take(2).let {
-    when {
-        it.isEmpty() -> throw NoEntityException(message = "no rows returned")
-        it.size == 1 -> it.single()
-        else -> throw MultipleEntitiesException(message = "multiple rows returned")
-    }
-}
-
-fun <T : Table> T.deleteSingleOrThrow(
-    op: T.(ISqlExpressionBuilder) -> Op<Boolean>,
-) {
-    val countDelete = deleteWhere(limit = 2, op = op)
-    when (countDelete) {
-        0 -> throw NoEntityException("no rows affected")
-        1 -> Unit
-        else -> throw MultipleEntitiesException("multiple rows affected: $countDelete")
-    }
-}
-
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
     select(buildList(builder))
