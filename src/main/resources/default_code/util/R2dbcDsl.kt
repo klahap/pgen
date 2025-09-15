@@ -1,7 +1,6 @@
 package default_code.util
 
 import io.r2dbc.spi.IsolationLevel
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
@@ -15,12 +14,12 @@ import org.jetbrains.exposed.v1.r2dbc.select
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.R2dbcTransaction
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction as r2dbcSuspendTransaction
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransactionAsync as r2dbcSuspendTransactionAsync
 import kotlin.coroutines.CoroutineContext
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionFactory
 import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
+import org.jetbrains.exposed.v1.r2dbc.transactions.transactionManager
 
 
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
@@ -50,14 +49,14 @@ fun R2dbcDatabase.Companion.connect(
 }
 
 suspend fun <T> R2dbcDatabase.suspendTransaction(
-    context: CoroutineContext = Dispatchers.IO,
     transactionIsolation: IsolationLevel? = null,
     readOnly: Boolean = false,
     statement: suspend R2dbcTransaction.() -> T
 ): T {
+    val isolation = transactionIsolation ?: transactionManager.defaultIsolationLevel
+    require(isolation != null) { "A default isolation level for this transaction has not been set" }
     val result = r2dbcSuspendTransaction(
-        context = context,
-        transactionIsolation = transactionIsolation,
+        transactionIsolation = isolation,
         readOnly = readOnly,
         db = this,
         statement = statement,
@@ -65,27 +64,12 @@ suspend fun <T> R2dbcDatabase.suspendTransaction(
     return result
 }
 
-suspend fun <T> R2dbcDatabase.suspendTransactionAsync(
-    context: CoroutineContext = Dispatchers.IO,
-    transactionIsolation: IsolationLevel? = null,
-    readOnly: Boolean = false,
-    statement: suspend R2dbcTransaction.() -> T
-): Deferred<T> {
-    return r2dbcSuspendTransactionAsync(
-        context = context,
-        db = this,
-        transactionIsolation = transactionIsolation,
-        readOnly = readOnly,
-        statement = statement,
-    )
-}
-
 fun <T> R2dbcDatabase.blockingTransaction(
     context: CoroutineContext = Dispatchers.IO,
     readOnly: Boolean = false,
     block: suspend R2dbcTransaction.() -> T,
 ) = runBlocking(context) {
-    val result = suspendTransaction(context = context, readOnly = readOnly, statement = block)
+    val result = suspendTransaction(readOnly = readOnly, statement = block)
     result
 }
 
@@ -95,13 +79,11 @@ fun interface TransactionFlowScope<T> {
 }
 
 fun <T> R2dbcDatabase.transactionFlow(
-    context: CoroutineContext = Dispatchers.IO,
     readOnly: Boolean = false,
     block: TransactionFlowScope<T>,
 ): Flow<T> {
     return channelFlow {
         this@transactionFlow.suspendTransaction(
-            context = context,
             readOnly = readOnly,
         ) {
             block.block()
