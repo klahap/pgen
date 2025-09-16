@@ -50,8 +50,8 @@ fun R2dbcDatabase.Companion.connect(
 
 fun IConnectionProperties.toR2dbcDatabase(
     codecs: List<CodecRegistrar> = emptyList(),
-    connectionConfig: PostgresqlConnectionConfiguration.Builder.() -> Unit = {},
-    databaseConfig: R2dbcDatabaseConfig.Builder.() -> Unit = {},
+    connectionConfig: PostgresqlConnectionConfiguration.Builder.(ConnectionConfig) -> Unit = {},
+    databaseConfig: R2dbcDatabaseConfig.Builder.(ConnectionConfig) -> Unit = {},
 ): R2dbcDatabase {
     val config = toConnectionConfig().toJdbc()
     val options = PostgresqlConnectionConfiguration.builder().apply {
@@ -61,14 +61,14 @@ fun IConnectionProperties.toR2dbcDatabase(
         username(username)
         password(password)
         codecs.forEach(::codecRegistrar)
-        connectionConfig()
+        connectionConfig(config)
     }.build()
     val cxFactory = PostgresqlConnectionFactory(options)
     val db = R2dbcDatabase.connect(
         connectionFactory = cxFactory,
         databaseConfig = R2dbcDatabaseConfig {
             explicitDialect = PostgreSQLDialect()
-            databaseConfig()
+            databaseConfig(config)
         }
     )
     return db
