@@ -17,10 +17,10 @@ import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction as r2dbcSu
 import kotlin.coroutines.CoroutineContext
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionFactory
+import io.r2dbc.postgresql.extension.CodecRegistrar
 import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
 import org.jetbrains.exposed.v1.r2dbc.transactions.transactionManager
-
 
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
     select(buildList(builder))
@@ -43,6 +43,32 @@ fun R2dbcDatabase.Companion.connect(
         connectionFactory = cxFactory,
         databaseConfig = R2dbcDatabaseConfig {
             explicitDialect = PostgreSQLDialect()
+        }
+    )
+    return db
+}
+
+fun IConnectionProperties.toR2dbcDatabase(
+    codecs: List<CodecRegistrar> = emptyList(),
+    connectionConfig: PostgresqlConnectionConfiguration.Builder.() -> Unit = {},
+    databaseConfig: R2dbcDatabaseConfig.Builder.() -> Unit = {},
+): R2dbcDatabase {
+    val config = toConnectionConfig().toJdbc()
+    val options = PostgresqlConnectionConfiguration.builder().apply {
+        host(config.host)
+        config.port?.let(::port)
+        database(config.database)
+        username(username)
+        password(password)
+        codecs.forEach(::codecRegistrar)
+        connectionConfig()
+    }.build()
+    val cxFactory = PostgresqlConnectionFactory(options)
+    val db = R2dbcDatabase.connect(
+        connectionFactory = cxFactory,
+        databaseConfig = R2dbcDatabaseConfig {
+            explicitDialect = PostgreSQLDialect()
+            databaseConfig()
         }
     )
     return db

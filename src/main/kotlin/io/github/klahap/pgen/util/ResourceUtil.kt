@@ -37,6 +37,7 @@ data class DefaultCodeFile(
             yield(listOf("util"), "BatchUpdateStatementDsl.kt")
             yield(listOf("util"), "Dsl.kt")
             yield(listOf("util"), "ConnectionConfig.kt")
+            yield(listOf("util"), "IConnectionProperties.kt")
             when (connectionType) {
                 Config.ConnectionType.JDBC -> yield(listOf("util"), "JdbcDsl.kt")
                 Config.ConnectionType.R2DBC -> yield(listOf("util"), "R2dbcDsl.kt")
