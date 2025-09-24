@@ -5,8 +5,6 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import io.github.klahap.pgen.model.config.Config.Companion.buildConfig
 import io.github.klahap.pgen.model.config.Config
-import io.github.klahap.pgen.model.config.TypeMapping
-import io.github.klahap.pgen.model.config.TypeOverwrite
 import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.PgenSpec
 import io.github.klahap.pgen.model.sql.Statement
@@ -59,8 +57,6 @@ private fun generateSpec(config: Config) {
                 enums = enums,
                 compositeTypes = compositeTypes,
                 statements = statements,
-                typeMappings = configDb.typeMappings.toList(),
-                typeOverwrites = configDb.typeOverwrites.toList(),
             )
         }
     }
@@ -69,10 +65,7 @@ private fun generateSpec(config: Config) {
         enums = specData.flatMap(PgenSpec::enums).sorted(),
         compositeTypes = specData.flatMap(PgenSpec::compositeTypes).sorted(),
         statements = specData.flatMap(PgenSpec::statements).sortedBy(Statement::name),
-        typeMappings = specData.flatMap(PgenSpec::typeMappings).sortedBy(TypeMapping::sqlType),
-        typeOverwrites = specData.flatMap(PgenSpec::typeOverwrites).sortedBy(TypeOverwrite::sqlColumn),
     )
-
     config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
 
@@ -84,8 +77,12 @@ private fun generateCode(config: Config) {
     CodeGenContext(
         rootPackageName = config.packageName,
         createDirectoriesForRootPackageName = config.createDirectoriesForRootPackageName,
-        typeMappings = spec.typeMappings.associate { it.sqlType to it.valueClass },
-        typeOverwrites = spec.typeOverwrites.associate { it.sqlColumn to it.valueClass },
+        typeMappings = config.dbConfigs.flatMap(Config.Db::typeMappings)
+            .associate { it.sqlType to it.valueClass },
+        enumMappings = config.dbConfigs.flatMap(Config.Db::enumMappings)
+            .associate { it.sqlType to it.enumClass },
+        typeOverwrites = config.dbConfigs.flatMap(Config.Db::typeOverwrites)
+            .associate { it.sqlColumn to it.valueClass },
         typeGroups = spec.tables.getColumnTypeGroups(),
         connectionType = config.connectionType,
         kotlinInstantType = config.kotlinInstantType,
@@ -136,6 +133,9 @@ fun main() {
             }
             typeMappings {
                 add(sqlType = "public.stripe_account_id", clazz = "io.github.klahap.pgen_test.StripeAccountId")
+            }
+            enumMappings {
+                add(sqlType = "public.role", clazz = "io.github.klahap.pgen_test.RoleDto")
             }
             typeOverwrites {
                 add(

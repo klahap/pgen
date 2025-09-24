@@ -104,3 +104,9 @@ data class KotlinValueClass(
     val name: KotlinClassName,
     val parseFunction: String? = null,
 )
+
+@Serializable
+data class KotlinEnumClass(
+    val name: KotlinClassName,
+    val mappings: Map<String, String> = emptyMap(),
+)

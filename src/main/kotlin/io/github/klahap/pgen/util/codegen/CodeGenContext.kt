@@ -4,6 +4,8 @@ import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.sql.Column
+import io.github.klahap.pgen.model.sql.KotlinClassName
+import io.github.klahap.pgen.model.sql.KotlinEnumClass
 import io.github.klahap.pgen.model.sql.KotlinValueClass
 import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
@@ -13,6 +15,7 @@ class CodeGenContext(
     rootPackageName: PackageName,
     val createDirectoriesForRootPackageName: Boolean,
     val typeMappings: Map<SqlObjectName, KotlinValueClass>,
+    val enumMappings: Map<SqlObjectName, KotlinEnumClass>,
     typeOverwrites: Map<SqlColumnName, KotlinValueClass>,
     typeGroups: List<Set<SqlColumnName>>,
     val connectionType: Config.ConnectionType,

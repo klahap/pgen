@@ -3,6 +3,7 @@ package io.github.klahap.pgen.model.config
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.sql.DbName
 import io.github.klahap.pgen.model.sql.KotlinClassName
+import io.github.klahap.pgen.model.sql.KotlinEnumClass
 import io.github.klahap.pgen.model.sql.KotlinValueClass
 import io.github.klahap.pgen.model.sql.SchemaName
 import io.github.klahap.pgen.model.sql.SqlColumnName
@@ -29,6 +30,7 @@ data class Config(
         val tableFilter: SqlObjectFilter,
         val statementScripts: Set<Path>,
         val typeMappings: Set<TypeMapping>,
+        val enumMappings: Set<EnumMapping>,
         val typeOverwrites: Set<TypeOverwrite>,
         val flyway: Flyway?,
     ) {
@@ -74,6 +76,7 @@ data class Config(
             private var tableFilter: SqlObjectFilter? = null
             private var statementScripts: Set<Path>? = null
             private var typeMappings: Set<TypeMapping>? = null
+            private var enumMappings: Set<EnumMapping>? = null
             private var typeOverwrites: Set<TypeOverwrite>? = null
             private var flyway: Flyway? = null
 
@@ -107,6 +110,31 @@ data class Config(
                 }
 
                 fun build() = mappings.toSet()
+            }
+
+            class EnumMappingBuilder(private val dbName: DbName) {
+                private val enumMappings = linkedSetOf<EnumMapping>()
+                fun add(
+                    sqlType: String,
+                    clazz: String,
+                    mappings: Map<String, String> = emptyMap(),
+                ) {
+                    val (schemaName, name) = sqlType.takeIfValidAbsoluteClazzName(size = 2)?.split('.')
+                        ?: throw IllegalArgumentException("illegal sqlType '$sqlType', expected format <schema>.<name>")
+                    val entity = EnumMapping(
+                        sqlType = SqlObjectName(
+                            schema = SchemaName(dbName = dbName, schemaName = schemaName),
+                            name = name,
+                        ),
+                        enumClass = KotlinEnumClass(
+                            name = clazz.toKotlinClassName(),
+                            mappings = mappings,
+                        ),
+                    )
+                    enumMappings.add(entity)
+                }
+
+                fun build() = enumMappings.toSet()
             }
 
             class TypeOverwriteBuilder(private val dbName: DbName) {
@@ -160,6 +188,10 @@ data class Config(
                 typeMappings = TypeMappingBuilder(dbName = dbName).apply(block).build()
             }
 
+            fun enumMappings(block: EnumMappingBuilder.() -> Unit) {
+                enumMappings = EnumMappingBuilder(dbName = dbName).apply(block).build()
+            }
+
             fun typeOverwrites(block: TypeOverwriteBuilder.() -> Unit) {
                 typeOverwrites = TypeOverwriteBuilder(dbName = dbName).apply(block).build()
             }
@@ -174,6 +206,7 @@ data class Config(
                 tableFilter = tableFilter ?: error("no table filter defined for DB config '$dbName'"),
                 statementScripts = statementScripts ?: emptySet(),
                 typeMappings = typeMappings?.distinctBy(TypeMapping::sqlType)?.toSet() ?: emptySet(),
+                enumMappings = enumMappings?.distinctBy(EnumMapping::sqlType)?.toSet() ?: emptySet(),
                 typeOverwrites = typeOverwrites?.distinctBy(TypeOverwrite::sqlColumn)?.toSet() ?: emptySet(),
                 flyway = flyway,
             )
@@ -220,6 +253,7 @@ data class Config(
             val db = Db.Builder(name = name).apply(block).build()
             dbConfigs.add(db)
         }
+
         fun kotlinInstantType(value: Boolean) = apply { kotlinInstantType = value }
 
         fun build() = Config(
