@@ -73,6 +73,7 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
         }
 
     addType(toTypeSpecEntity())
+    addType(toTypeSpecUpdateEntity())
 }
 
 
@@ -120,6 +121,53 @@ private fun Table.toTypeSpecEntity() = buildDataClass(this@toTypeSpecEntity.enti
                         column.prettyName,
                         column.prettyName,
                     )
+                }
+            }
+        }
+    }
+}
+
+context(c: CodeGenContext)
+private fun Table.toTypeSpecUpdateEntity(
+) = buildDataClass(this@toTypeSpecUpdateEntity.updateEntityTypeName.simpleName) {
+    primaryConstructor {
+        this@toTypeSpecUpdateEntity.columns.forEach { column ->
+            val innerType = column.getColumnTypeName()
+            val type = when (innerType.isNullable) {
+                true -> c.poet.updateFieldNullable.parameterizedBy(innerType.copy(nullable = false))
+                false -> c.poet.updateFieldNotNullable.parameterizedBy(innerType)
+            }
+            addParameter(column.prettyName, type)
+            addProperty(name = column.prettyName, type = type) {
+                initializer(column.prettyName)
+            }
+        }
+    }
+    addCompanionObject {
+        addFunction("set") {
+            receiver(Poet.updateBuilder.parameterizedBy(STAR))
+            addParameter(name = "entity", type = this@toTypeSpecUpdateEntity.updateEntityTypeName)
+            addCode {
+                this@toTypeSpecUpdateEntity.columns.forEach { column ->
+                    addCode {
+                        beginControlFlow("when (entity.%L)", column.prettyName)
+                        addStatement("%T.Unset -> Unit", c.poet.updateField)
+                        if (column.getColumnTypeName().isNullable)
+                            addStatement(
+                                "%T.Null -> set(%T.%L, null)",
+                                c.poet.updateField,
+                                this@toTypeSpecUpdateEntity.name.typeName,
+                                column.prettyName,
+                            )
+                        addStatement(
+                            "is %T.Value -> set(%T.%L, entity.%L.value)",
+                            c.poet.updateField,
+                            this@toTypeSpecUpdateEntity.name.typeName,
+                            column.prettyName,
+                            column.prettyName,
+                        )
+                        endControlFlow()
+                    }
                 }
             }
         }

@@ -14,6 +14,9 @@ data class Table(
     context(c: CodeGenContext)
     val entityTypeName
         get() = ClassName("${name.packageName.name}.${name.prettyName}", "Entity")
+    context(c: CodeGenContext)
+    val updateEntityTypeName
+        get() = ClassName("${name.packageName.name}.${name.prettyName}", "UpdateEntity")
 
     @Serializable
     data class PrimaryKey(val keyName: String, val columnNames: List<Column.Name>)
