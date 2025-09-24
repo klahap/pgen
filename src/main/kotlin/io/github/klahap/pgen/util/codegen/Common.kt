@@ -20,7 +20,6 @@ object Poet {
     val json = ClassName("kotlinx.serialization.json", "Json")
     val jsonElement = ClassName("kotlinx.serialization.json", "JsonElement")
 
-    val instant = ClassName("kotlin.time", "Instant")
     val duration = ClassName("kotlinx.datetime", "Duration")
     val localTime = ClassName("kotlinx.datetime", "LocalTime")
     val localDate = ClassName("kotlinx.datetime", "LocalDate")

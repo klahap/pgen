@@ -40,7 +40,7 @@ fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (th
     Column.Type.Primitive.INT2 -> Short::class.asTypeName()
     Column.Type.Primitive.TEXT -> String::class.asTypeName()
     Column.Type.Primitive.TIME -> Poet.localTime
-    Column.Type.Primitive.TIMESTAMP -> Poet.instant
+    Column.Type.Primitive.TIMESTAMP -> c.poet.instant
     Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> Poet.offsetDateTime
     Column.Type.Primitive.UUID -> UUID::class.asTypeName()
     Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> BigDecimal::class.asTypeName()

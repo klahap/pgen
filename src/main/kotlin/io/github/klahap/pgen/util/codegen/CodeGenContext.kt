@@ -1,5 +1,6 @@
 package io.github.klahap.pgen.util.codegen
 
+import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.sql.Column
@@ -15,6 +16,7 @@ class CodeGenContext(
     typeOverwrites: Map<SqlColumnName, KotlinValueClass>,
     typeGroups: List<Set<SqlColumnName>>,
     val connectionType: Config.ConnectionType,
+    val kotlinInstantType: Boolean,
 ) {
     val allTypeOverwrites: Map<SqlColumnName, KotlinValueClass> = typeOverwrites.entries.flatMap { (column, clazz) ->
         val group = typeGroups.firstOrNull { it.contains(column) } ?: setOf(column)
@@ -43,11 +45,17 @@ class CodeGenContext(
         return copy(columns = newColumns)
     }
 
-    val poet = Poet(rootPackageName = rootPackageName)
+    val poet = Poet(rootPackageName = rootPackageName, kotlinInstantType = kotlinInstantType)
 
     data class Poet(
         val rootPackageName: PackageName,
+        val kotlinInstantType: Boolean,
     ) {
+        val instant = if (kotlinInstantType)
+            ClassName("kotlin.time", "Instant")
+        else
+            ClassName("kotlinx.datetime", "Instant")
+
         val packageCustomColumn = PackageName("$rootPackageName.column_type")
         private val packageUtil = PackageName("$rootPackageName.util")
 

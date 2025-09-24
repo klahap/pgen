@@ -88,6 +88,7 @@ private fun generateCode(config: Config) {
         typeOverwrites = spec.typeOverwrites.associate { it.sqlColumn to it.valueClass },
         typeGroups = spec.tables.getColumnTypeGroups(),
         connectionType = config.connectionType,
+        kotlinInstantType = config.kotlinInstantType,
     ).run {
         directorySync(config.outputPath) {
             DefaultCodeFile.all(connectionType = config.connectionType).forEach { sync(it) }
@@ -150,6 +151,7 @@ fun main() {
         specFilePath("$testRepo/src/main/resources/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)
         connectionType(Config.ConnectionType.R2DBC)
+        kotlinInstantType(false)
     }
     generate(config)
 }

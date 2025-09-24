@@ -17,6 +17,7 @@ data class Config(
     val specFilePath: Path,
     val createDirectoriesForRootPackageName: Boolean,
     val connectionType: ConnectionType,
+    val kotlinInstantType: Boolean, // TODO remove when Exposed v1 is stable
 ) {
     enum class ConnectionType {
         JDBC, R2DBC
@@ -206,6 +207,7 @@ data class Config(
         private var specFilePath: Path? = null
         private var createDirectoriesForRootPackageName: Boolean = true
         private var connectionType: ConnectionType = ConnectionType.JDBC
+        private var kotlinInstantType: Boolean = true
 
         fun connectionType(type: ConnectionType) = apply { connectionType = type }
         fun packageName(name: String) = apply { packageName = name }
@@ -218,6 +220,7 @@ data class Config(
             val db = Db.Builder(name = name).apply(block).build()
             dbConfigs.add(db)
         }
+        fun kotlinInstantType(value: Boolean) = apply { kotlinInstantType = value }
 
         fun build() = Config(
             dbConfigs = dbConfigs
@@ -232,6 +235,7 @@ data class Config(
             specFilePath = specFilePath ?: error("no path pgen spec file defined"),
             createDirectoriesForRootPackageName = createDirectoriesForRootPackageName,
             connectionType = connectionType,
+            kotlinInstantType = kotlinInstantType,
         )
     }
 
