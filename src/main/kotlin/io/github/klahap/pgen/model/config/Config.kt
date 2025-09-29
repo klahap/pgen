@@ -9,7 +9,17 @@ import io.github.klahap.pgen.model.sql.SchemaName
 import io.github.klahap.pgen.model.sql.SqlColumnName
 import io.github.klahap.pgen.model.sql.SqlObjectName
 import java.nio.file.Path
+import kotlin.collections.plus
 import kotlin.io.path.Path
+
+private fun String.takeIfValidAbsoluteClazzName(size: Int? = null): String? {
+    val parts = split('.')
+    if (parts.any(String::isBlank)) return null
+    return if (size != null)
+        takeIf { parts.size == size }
+    else
+        takeIf { parts.size > 1 }
+}
 
 data class Config(
     val dbConfigs: List<Db>,
@@ -19,9 +29,112 @@ data class Config(
     val createDirectoriesForRootPackageName: Boolean,
     val connectionType: ConnectionType,
     val kotlinInstantType: Boolean, // TODO remove when Exposed v1 is stable
+    val oasConfig: OasConfig?,
 ) {
     enum class ConnectionType {
         JDBC, R2DBC
+    }
+
+    data class OasConfig(
+        val title: String,
+        val version: String,
+        val oasRootPath: Path,
+        val oasCommonName: String,
+        val pathPrefix: String,
+        val tables: List<Table>,
+    ) {
+
+        data class Table(
+            val name: SqlObjectName,
+            val ignoreFields: Set<String>,
+            val ignoreFieldsAtCreate: Set<String>,
+            val ignoreFieldsAtUpdate: Set<String>,
+            val ignoreMethods: Set<CRUD>,
+        ) {
+            class Builder(val name: SqlObjectName) {
+                private val ignoreFields: MutableSet<String> = mutableSetOf()
+                private val ignoreFieldsAtCreate: MutableSet<String> = mutableSetOf()
+                private val ignoreFieldsAtUpdate: MutableSet<String> = mutableSetOf()
+                private val ignoreMethods: MutableSet<CRUD> = mutableSetOf()
+
+                fun ignoreFields(vararg names: String) = apply { ignoreFields.addAll(names) }
+                fun ignoreFieldsAtCreate(vararg names: String) = apply { ignoreFieldsAtCreate.addAll(names) }
+                fun ignoreFieldsAtUpdate(vararg names: String) = apply { ignoreFieldsAtUpdate.addAll(names) }
+                fun ignoreFieldsAtCreateAndUpdate(vararg names: String) {
+                    ignoreFieldsAtCreate(*names)
+                    ignoreFieldsAtUpdate(*names)
+                }
+
+                fun ignoreMethods(vararg methods: CRUD) = apply { ignoreMethods.addAll(methods) }
+
+                fun build() = Table(
+                    name = name,
+                    ignoreFields = ignoreFields.toSet(),
+                    ignoreFieldsAtCreate = ignoreFieldsAtCreate.toSet(),
+                    ignoreFieldsAtUpdate = ignoreFieldsAtUpdate.toSet(),
+                    ignoreMethods = ignoreMethods.toSet(),
+                )
+            }
+        }
+
+        enum class CRUD {
+            CREATE, READ, READ_ALL, UPDATE, DELETE
+        }
+
+        class Builder {
+            var title: String = "Backend"
+            var version: String = "1.0.0"
+            var oasRootPath: Path? = null
+            var oasCommonName: String = "Common"
+            var pathPrefix: String = "/api"
+            private val tables: MutableList<Table> = mutableListOf()
+            private val defaultIgnoreFields: MutableSet<String> = mutableSetOf()
+            private val defaultIgnoreFieldsAtCreate: MutableSet<String> = mutableSetOf()
+            private val defaultIgnoreFieldsAtUpdate: MutableSet<String> = mutableSetOf()
+
+            fun oasRootPath(path: String) = apply { oasRootPath = Path(path) }
+            fun oasRootPath(path: Path) = apply { oasRootPath = path }
+            fun defaultIgnoreFields(vararg names: String) = defaultIgnoreFields.addAll(names)
+            fun defaultIgnoreFieldsAtCreate(vararg names: String) = defaultIgnoreFieldsAtCreate.addAll(names)
+            fun defaultIgnoreFieldsAtUpdate(vararg names: String) = defaultIgnoreFieldsAtUpdate.addAll(names)
+            fun defaultIgnoreFieldsAtCreateAndUpdate(vararg names: String) {
+                defaultIgnoreFieldsAtCreate(*names)
+                defaultIgnoreFieldsAtUpdate(*names)
+            }
+
+            fun table(sqlTable: String, block: Table.Builder.() -> Unit = {}) {
+                val objName = sqlTable.tableToSqlObjectName()
+                val table = Table.Builder(objName).apply(block).build()
+                tables.add(table)
+            }
+
+            fun build() = OasConfig(
+                title = title,
+                version = version,
+                oasRootPath = oasRootPath ?: error("oas root path is not set"),
+                oasCommonName = oasCommonName,
+                pathPrefix = pathPrefix,
+                tables = tables.distinctBy { it.name }.map {
+                    it.copy(
+                        ignoreFields = it.ignoreFields + defaultIgnoreFields,
+                        ignoreFieldsAtUpdate = it.ignoreFieldsAtUpdate + defaultIgnoreFieldsAtUpdate,
+                        ignoreFieldsAtCreate = it.ignoreFieldsAtCreate + defaultIgnoreFieldsAtCreate,
+                    )
+                },
+            )
+
+            companion object {
+                private fun String.tableToSqlObjectName(): SqlObjectName {
+                    val (dbName, schemaName, tableName) = this.takeIfValidAbsoluteClazzName(size = 3)
+                        ?.split('.')
+                        ?: throw IllegalArgumentException("illegal column name '$this', expected format <dbName>.<schema>.<table>")
+                    return SqlObjectName(
+                        schema = SchemaName(dbName = DbName(dbName), schemaName = schemaName),
+                        name = tableName,
+                    )
+                }
+            }
+        }
     }
 
     data class Db(
@@ -212,15 +325,6 @@ data class Config(
             )
 
             companion object {
-                private fun String.takeIfValidAbsoluteClazzName(size: Int? = null): String? {
-                    val parts = split('.')
-                    if (parts.any(String::isBlank)) return null
-                    return if (size != null)
-                        takeIf { parts.size == size }
-                    else
-                        takeIf { parts.size > 1 }
-                }
-
                 private fun String.toKotlinClassName(): KotlinClassName {
                     takeIfValidAbsoluteClazzName()
                         ?: throw IllegalArgumentException("illegal class name '$this', provide full class name with package")
@@ -241,6 +345,7 @@ data class Config(
         private var createDirectoriesForRootPackageName: Boolean = true
         private var connectionType: ConnectionType = ConnectionType.JDBC
         private var kotlinInstantType: Boolean = true
+        private var oasConfig: OasConfig? = null
 
         fun connectionType(type: ConnectionType) = apply { connectionType = type }
         fun packageName(name: String) = apply { packageName = name }
@@ -252,6 +357,10 @@ data class Config(
         fun addDb(name: String, block: Db.Builder.() -> Unit) {
             val db = Db.Builder(name = name).apply(block).build()
             dbConfigs.add(db)
+        }
+
+        fun oasConfig(block: OasConfig.Builder.() -> Unit) {
+            oasConfig = OasConfig.Builder().apply(block).build()
         }
 
         fun kotlinInstantType(value: Boolean) = apply { kotlinInstantType = value }
@@ -270,6 +379,7 @@ data class Config(
             createDirectoriesForRootPackageName = createDirectoriesForRootPackageName,
             connectionType = connectionType,
             kotlinInstantType = kotlinInstantType,
+            oasConfig = oasConfig,
         )
     }
 

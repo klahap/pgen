@@ -147,6 +147,7 @@ data class Column(
                 private val valueClass: KotlinValueClass,
                 override val originalType: Type,
             ) : DomainType {
+                val valueClassName get() = valueClass.name
                 override val sqlType: String get() = originalType.sqlType
 
                 context(c: CodeGenContext)

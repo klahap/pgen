@@ -73,6 +73,8 @@ object Poet {
     val updateBuilder = packageExposedCore.plus("statements").className("UpdateBuilder")
 
     val jsonColumn = packageExposedJson.className("json")
+    val option = ClassName("io.github.goquati.kotlin.util","Option")
+    val optionTakeSome = ClassName("io.github.goquati.kotlin.util","takeSome")
 }
 
 context(c: CodeGenContext)

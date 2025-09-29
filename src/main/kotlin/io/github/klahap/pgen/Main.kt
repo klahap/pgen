@@ -5,6 +5,11 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import io.github.klahap.pgen.model.config.Config.Companion.buildConfig
 import io.github.klahap.pgen.model.config.Config
+import io.github.klahap.pgen.model.oas.CommonOasData
+import io.github.klahap.pgen.model.oas.EnumOasData
+import io.github.klahap.pgen.model.oas.MetaOasData
+import io.github.klahap.pgen.model.oas.OasGenContext
+import io.github.klahap.pgen.model.oas.TableOasData
 import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.PgenSpec
 import io.github.klahap.pgen.model.sql.Statement
@@ -16,6 +21,7 @@ import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.CodeGenContext.Companion.getColumnTypeGroups
 import io.github.klahap.pgen.util.codegen.sync
 import io.github.klahap.pgen.util.codegen.syncCodecs
+import io.github.klahap.pgen.util.codegen.oas.toOpenApi
 import io.github.klahap.pgen.util.parseStatements
 import io.github.klahap.pgen.util.toFlywayOrNull
 import kotlinx.serialization.decodeFromString
@@ -69,10 +75,42 @@ private fun generateSpec(config: Config) {
     config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
 
+private fun generateOas(config: Config, spec: PgenSpec) {
+    val oasConfig = config.oasConfig ?: return
+    val tableConfigs = oasConfig.tables.associateBy { it.name }
+    OasGenContext(
+        pathPrefix = oasConfig.pathPrefix,
+        meta = MetaOasData(
+            title = oasConfig.title,
+            version = oasConfig.version,
+        ),
+        oasCommonName = oasConfig.oasCommonName,
+    ).run {
+        println("sync oas files to ${oasConfig.oasRootPath}")
+        directorySync(oasConfig.oasRootPath) {
+            val oasTables = spec.tables.mapNotNull {table ->
+                val tableConfig = tableConfigs[table.name] ?: return@mapNotNull null
+                TableOasData.fromData(table, config = tableConfig)
+            }
+            oasTables.forEach {
+                sync(relativePath = it.nameCapitalized + ".yaml", content = it.toOpenApi())
+            }
+            val validEnumNames = oasTables.flatMap { it.fields }.map { it.type.getEnumNameOrNull() }
+            val oasEnums = spec.enums.filter { it.name in validEnumNames }
+                .map(EnumOasData::fromSqlData)
+            if (oasEnums.isNotEmpty()) {
+                val commonData = CommonOasData(enums = oasEnums)
+                sync(relativePath = oasConfig.oasCommonName + ".yaml", content = commonData.toOpenApi())
+            }
+        }
+    }
+}
+
 private fun generateCode(config: Config) {
     if (config.specFilePath.notExists())
         error("Pgen spec file does not exist: '${config.specFilePath}'")
     val spec = yaml.decodeFromString<PgenSpec>(config.specFilePath.readText())
+    generateOas(config, spec)
 
     CodeGenContext(
         rootPackageName = config.packageName,
@@ -87,6 +125,7 @@ private fun generateCode(config: Config) {
         connectionType = config.connectionType,
         kotlinInstantType = config.kotlinInstantType,
     ).run {
+        println("sync code files to ${config.outputPath}")
         directorySync(config.outputPath) {
             DefaultCodeFile.all(connectionType = config.connectionType).forEach { sync(it) }
             spec.enums.forEach { sync(it) }
@@ -116,6 +155,7 @@ private fun flywayMigration(config: Config) {
 fun main() {
     val envFile = EnvFileService(".env")
     val config = buildConfig {
+        val testRepo = envFile["TEST_REPO"]
         addDb("scy") {
             connectionConfig {
                 url(envFile["DB_URL"])
@@ -144,9 +184,15 @@ fun main() {
                     parseFunction = "foo"
                 )
             }
+            oasConfig {
+                oasRootPath("$testRepo/oas/pgen")
+                defaultIgnoreFieldsAtCreateAndUpdate("id", "created_at", "modified_at", "modified_by")
+                table("scy.public.item") {
+
+                }
+            }
         }
         packageName("io.github.klahap.pgen_test.db")
-        val testRepo = envFile["TEST_REPO"]
         outputPath("$testRepo/src/main/kotlin/db")
         specFilePath("$testRepo/src/main/resources/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)

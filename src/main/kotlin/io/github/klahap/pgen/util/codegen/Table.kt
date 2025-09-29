@@ -14,6 +14,7 @@ import io.github.klahap.pgen.dsl.buildObject
 import io.github.klahap.pgen.dsl.primaryConstructor
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.util.makeDifferent
+import kotlin.text.set
 
 context(c: CodeGenContext)
 internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.name.prettyName) {
@@ -133,10 +134,7 @@ private fun Table.toTypeSpecUpdateEntity(
     primaryConstructor {
         this@toTypeSpecUpdateEntity.columns.forEach { column ->
             val innerType = column.getColumnTypeName()
-            val type = when (innerType.isNullable) {
-                true -> c.poet.updateFieldNullable.parameterizedBy(innerType.copy(nullable = false))
-                false -> c.poet.updateFieldNotNullable.parameterizedBy(innerType)
-            }
+            val type = Poet.option.parameterizedBy(innerType)
             addParameter(column.prettyName, type)
             addProperty(name = column.prettyName, type = type) {
                 initializer(column.prettyName)
@@ -149,25 +147,13 @@ private fun Table.toTypeSpecUpdateEntity(
             addParameter(name = "entity", type = this@toTypeSpecUpdateEntity.updateEntityTypeName)
             addCode {
                 this@toTypeSpecUpdateEntity.columns.forEach { column ->
-                    addCode {
-                        beginControlFlow("when (entity.%L)", column.prettyName)
-                        addStatement("%T.Unset -> Unit", c.poet.updateField)
-                        if (column.getColumnTypeName().isNullable)
-                            addStatement(
-                                "%T.Null -> set(%T.%L, null)",
-                                c.poet.updateField,
-                                this@toTypeSpecUpdateEntity.name.typeName,
-                                column.prettyName,
-                            )
-                        addStatement(
-                            "is %T.Value -> set(%T.%L, entity.%L.value)",
-                            c.poet.updateField,
-                            this@toTypeSpecUpdateEntity.name.typeName,
-                            column.prettyName,
-                            column.prettyName,
-                        )
-                        endControlFlow()
-                    }
+                    add(
+                        "entity.%L.%T()?.let { set(%T.%L, it.value) }\n",
+                        column.prettyName,
+                        Poet.optionTakeSome,
+                        this@toTypeSpecUpdateEntity.name.typeName,
+                        column.prettyName,
+                    )
                 }
             }
         }

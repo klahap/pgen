@@ -36,6 +36,10 @@ fun String.toCamelCase(capitalized: Boolean) = toNameParts()
     }.joinToString(separator = "")
     .toValidName()
 
+fun String.toKababCase() = toNameParts()
+    .joinToString(separator = "-") { it.lowercase() }
+    .toValidName()
+
 fun String.toSnakeCase(uppercase: Boolean = false) = toNameParts()
     .joinToString(separator = "_") { if (uppercase) it.uppercase() else it.lowercase() }
     .toValidName()
