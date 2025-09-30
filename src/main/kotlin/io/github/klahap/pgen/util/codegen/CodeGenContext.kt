@@ -61,6 +61,7 @@ class CodeGenContext(
 
         val packageCustomColumn = PackageName("$rootPackageName.column_type")
         private val packageUtil = PackageName("$rootPackageName.util")
+        val packageMapper = PackageName("$rootPackageName.mapper")
 
         val getArrayColumnType = packageCustomColumn.className("getArrayColumnType")
         val domainType = packageCustomColumn.className("domainType")

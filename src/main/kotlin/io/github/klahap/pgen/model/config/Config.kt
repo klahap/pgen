@@ -41,6 +41,7 @@ data class Config(
         val oasRootPath: Path,
         val oasCommonName: String,
         val pathPrefix: String,
+        val mapper: Mapper?,
         val tables: List<Table>,
     ) {
 
@@ -77,6 +78,10 @@ data class Config(
             }
         }
 
+        data class Mapper(
+            val packageOasModel: String,
+        )
+
         enum class CRUD {
             CREATE, READ, READ_ALL, UPDATE, DELETE
         }
@@ -87,6 +92,7 @@ data class Config(
             var oasRootPath: Path? = null
             var oasCommonName: String = "Common"
             var pathPrefix: String = "/api"
+            private var mapper: Mapper? = null
             private val tables: MutableList<Table> = mutableListOf()
             private val defaultIgnoreFields: MutableSet<String> = mutableSetOf()
             private val defaultIgnoreFieldsAtCreate: MutableSet<String> = mutableSetOf()
@@ -108,12 +114,17 @@ data class Config(
                 tables.add(table)
             }
 
+            fun mapper(packageOasModel: String) = apply {
+                mapper = Mapper(packageOasModel = packageOasModel,)
+            }
+
             fun build() = OasConfig(
                 title = title,
                 version = version,
                 oasRootPath = oasRootPath ?: error("oas root path is not set"),
                 oasCommonName = oasCommonName,
                 pathPrefix = pathPrefix,
+                mapper = mapper,
                 tables = tables.distinctBy { it.name }.map {
                     it.copy(
                         ignoreFields = it.ignoreFields + defaultIgnoreFields,

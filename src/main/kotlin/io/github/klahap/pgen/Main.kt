@@ -14,6 +14,7 @@ import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.PgenSpec
 import io.github.klahap.pgen.model.sql.Statement
 import io.github.klahap.pgen.service.DbService
+import io.github.klahap.pgen.service.DirectorySyncService
 import io.github.klahap.pgen.service.DirectorySyncService.Companion.directorySync
 import io.github.klahap.pgen.util.DefaultCodeFile
 import io.github.klahap.pgen.service.EnvFileService
@@ -75,9 +76,38 @@ private fun generateSpec(config: Config) {
     config.specFilePath.createParentDirectories().writeText(yaml.encodeToString(spec))
 }
 
-private fun generateOas(config: Config, spec: PgenSpec) {
-    val oasConfig = config.oasConfig ?: return
+private fun getOasTables(config: Config, spec: PgenSpec): List<TableOasData> {
+    val oasConfig = config.oasConfig ?: return emptyList()
     val tableConfigs = oasConfig.tables.associateBy { it.name }
+    val oasTables = spec.tables.mapNotNull { table ->
+        val tableConfig = tableConfigs[table.name] ?: return@mapNotNull null
+        TableOasData.fromData(table, config = tableConfig)
+    }
+    return oasTables
+}
+
+private fun getOasCommon(config: Config, spec: PgenSpec): CommonOasData? {
+    val oasTables = getOasTables(config, spec).takeIf { it.isNotEmpty() } ?: emptyList()
+    val validEnumNames = oasTables.flatMap { it.fields }.map { it.type.getEnumNameOrNull() }
+    val oasEnums = spec.enums.filter { it.name in validEnumNames }
+        .map(EnumOasData::fromSqlData)
+        .takeIf { it.isNotEmpty() } ?: return null
+    val commonData = CommonOasData(enums = oasEnums)
+    return commonData
+}
+
+private fun Config.loadSpec(): PgenSpec {
+    if (specFilePath.notExists())
+        error("Pgen spec file does not exist: '$specFilePath'")
+    val spec = yaml.decodeFromString<PgenSpec>(specFilePath.readText())
+    return spec
+}
+
+private fun generateOas(config: Config, spec: PgenSpec? = null) {
+    val spec = spec ?: config.loadSpec()
+    val oasConfig = config.oasConfig ?: return
+    val oasTables = getOasTables(config, spec).takeIf { it.isNotEmpty() } ?: return
+    val commonData = getOasCommon(config, spec)
     OasGenContext(
         pathPrefix = oasConfig.pathPrefix,
         meta = MetaOasData(
@@ -88,28 +118,18 @@ private fun generateOas(config: Config, spec: PgenSpec) {
     ).run {
         println("sync oas files to ${oasConfig.oasRootPath}")
         directorySync(oasConfig.oasRootPath) {
-            val oasTables = spec.tables.mapNotNull {table ->
-                val tableConfig = tableConfigs[table.name] ?: return@mapNotNull null
-                TableOasData.fromData(table, config = tableConfig)
-            }
             oasTables.forEach {
                 sync(relativePath = it.nameCapitalized + ".yaml", content = it.toOpenApi())
             }
-            val validEnumNames = oasTables.flatMap { it.fields }.map { it.type.getEnumNameOrNull() }
-            val oasEnums = spec.enums.filter { it.name in validEnumNames }
-                .map(EnumOasData::fromSqlData)
-            if (oasEnums.isNotEmpty()) {
-                val commonData = CommonOasData(enums = oasEnums)
+            if (commonData != null)
                 sync(relativePath = oasConfig.oasCommonName + ".yaml", content = commonData.toOpenApi())
-            }
+            cleanup()
         }
     }
 }
 
 private fun generateCode(config: Config) {
-    if (config.specFilePath.notExists())
-        error("Pgen spec file does not exist: '${config.specFilePath}'")
-    val spec = yaml.decodeFromString<PgenSpec>(config.specFilePath.readText())
+    val spec = config.loadSpec()
     generateOas(config, spec)
 
     CodeGenContext(
@@ -134,8 +154,20 @@ private fun generateCode(config: Config) {
             spec.domains.filter { it.name !in typeMappings }.forEach { sync(it) }
             spec.tables.map { it.update() }.forEach { sync(it) }
             spec.statements.groupBy { it.name.dbName }.values.forEach { sync(it) }
+            syncOasMappers(config, spec)
             cleanup()
         }
+    }
+}
+
+context(c: CodeGenContext)
+private fun DirectorySyncService.syncOasMappers(config: Config, spec: PgenSpec) {
+    val mapperConfig = config.oasConfig?.mapper ?: return
+    val oasTables = getOasTables(config, spec).takeIf { it.isNotEmpty() } ?: return
+    val enums = getOasCommon(config, spec)?.enums ?: emptyList()
+    with(mapperConfig) {
+        enums.forEach { sync(it) }
+        oasTables.forEach { sync(it) }
     }
 }
 
@@ -171,11 +203,13 @@ fun main() {
             statements {
                 //addScript("./test-queries.sql")
             }
+            val moduleShared = "io.github.klahap.shared"
             typeMappings {
-                add(sqlType = "public.stripe_account_id", clazz = "io.github.klahap.pgen_test.StripeAccountId")
+                add("public.user_id", clazz = "$moduleShared.UserId")
+                add("public.email", clazz = "$moduleShared.Email")
             }
             enumMappings {
-                add(sqlType = "public.role", clazz = "io.github.klahap.pgen_test.RoleDto")
+                //add(sqlType = "public.role", clazz = "io.github.klahap.pgen_test.RoleDto")
             }
             typeOverwrites {
                 add(
@@ -187,14 +221,15 @@ fun main() {
             oasConfig {
                 oasRootPath("$testRepo/oas/pgen")
                 defaultIgnoreFieldsAtCreateAndUpdate("id", "created_at", "modified_at", "modified_by")
+                mapper(packageOasModel = "io.github.klahap.oas_server.oas_model")
                 table("scy.public.item") {
-
+                    ignoreFields("embedding")
                 }
             }
         }
-        packageName("io.github.klahap.pgen_test.db")
-        outputPath("$testRepo/src/main/kotlin/db")
-        specFilePath("$testRepo/src/main/resources/pgen-spec.yaml")
+        packageName("io.github.klahap.pgen")
+        outputPath("$testRepo/pgen/src/main/kotlin")
+        specFilePath("$testRepo/pgen/src/main/resources/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)
         connectionType(Config.ConnectionType.R2DBC)
         kotlinInstantType(false)
@@ -229,6 +264,14 @@ class Plugin : Plugin<Project> {
             task.doLast {
                 val config = configBuilder.build()
                 generateCode(config)
+            }
+        }
+
+        project.task("pgenGenerateOas") { task ->
+            task.group = TASK_GROUP
+            task.doLast {
+                val config = configBuilder.build()
+                generateOas(config)
             }
         }
 

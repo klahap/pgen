@@ -6,6 +6,8 @@ import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.dsl.fileSpec
 import io.github.klahap.pgen.model.config.Config
+import io.github.klahap.pgen.model.oas.EnumOasData
+import io.github.klahap.pgen.model.oas.TableOasData
 import io.github.klahap.pgen.model.sql.Enum
 import io.github.klahap.pgen.model.sql.SqlObject
 import io.github.klahap.pgen.model.sql.Statement
@@ -14,6 +16,8 @@ import io.github.klahap.pgen.model.sql.Column.Type.NonPrimitive.Domain
 import io.github.klahap.pgen.model.sql.CompositeType
 import io.github.klahap.pgen.service.DirectorySyncService
 import io.github.klahap.pgen.util.DefaultCodeFile
+import io.github.klahap.pgen.util.codegen.oas.addEnumMapper
+import io.github.klahap.pgen.util.codegen.oas.addTableMapper
 import java.time.OffsetDateTime
 
 object Poet {
@@ -75,6 +79,7 @@ object Poet {
     val jsonColumn = packageExposedJson.className("json")
     val option = ClassName("io.github.goquati.kotlin.util","Option")
     val optionTakeSome = ClassName("io.github.goquati.kotlin.util","takeSome")
+    val optionMap = ClassName("io.github.goquati.kotlin.util","map")
 }
 
 context(c: CodeGenContext)
@@ -124,6 +129,46 @@ fun DirectorySyncService.sync(
             name = fileName,
             block = {
                 addStatements(obj)
+                block()
+            }
+        )
+    )
+}
+
+context(c: CodeGenContext, mapperConfig: Config.OasConfig.Mapper)
+fun DirectorySyncService.sync(
+    obj: EnumOasData,
+    block: FileSpec.Builder.() -> Unit = {},
+) {
+    val fileName = "${obj.nameCapitalized}.kt"
+    val packageName = c.poet.packageMapper
+    sync(
+        relativePath = packageName.toRelativePath() + "/$fileName",
+        content = fileSpec(
+            packageName = packageName,
+            name = fileName,
+            block = {
+                addEnumMapper(obj)
+                block()
+            }
+        )
+    )
+}
+
+context(c: CodeGenContext, mapperConfig: Config.OasConfig.Mapper)
+fun DirectorySyncService.sync(
+    obj: TableOasData,
+    block: FileSpec.Builder.() -> Unit = {},
+) {
+    val fileName = "${obj.nameCapitalized}.kt"
+    val packageName = c.poet.packageMapper
+    sync(
+        relativePath = packageName.toRelativePath() + "/$fileName",
+        content = fileSpec(
+            packageName = packageName,
+            name = fileName,
+            block = {
+                addTableMapper(obj)
                 block()
             }
         )

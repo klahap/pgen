@@ -1,5 +1,6 @@
 package io.github.klahap.pgen.model.oas
 
+import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.model.sql.Table
 
@@ -9,6 +10,7 @@ data class TableOasData(
     private val name: String,
     val fields: List<TableFieldOasData>,
     val endpoints: Set<Config.OasConfig.CRUD>,
+    val sqlData: Table,
 ) {
     val idFormat = fields.singleOrNull { it.name == "id" }?.type?.let { it as? TableFieldTypeOasData.Type }
         .also { if (it == null) error("'id' field not found for table $name") }
@@ -20,6 +22,15 @@ data class TableOasData(
     val fieldsAtCreate get() = fields.filterNot { it.ignoreAtCreate }
     val fieldsAtUpdate get() = fields.filterNot { it.ignoreAtUpdate }
 
+    context(mapperConfig: Config.OasConfig.Mapper)
+    fun getOasReadType() = ClassName(mapperConfig.packageOasModel, "${nameCapitalized}Dto")
+
+    context(mapperConfig: Config.OasConfig.Mapper)
+    fun getOasUpdateType() = ClassName(mapperConfig.packageOasModel, "${nameCapitalized}UpdateDto")
+
+    context(mapperConfig: Config.OasConfig.Mapper)
+    fun getOasCreateType() = ClassName(mapperConfig.packageOasModel, "${nameCapitalized}CreateDto")
+
     companion object {
         fun fromData(data: Table, config: Config.OasConfig.Table): TableOasData {
             val fields = data.columns.mapNotNull { column ->
@@ -30,14 +41,16 @@ data class TableOasData(
                     nullable = column.isNullable,
                     ignoreAtCreate = possibleNames anyIn config.ignoreFieldsAtCreate,
                     ignoreAtUpdate = possibleNames anyIn config.ignoreFieldsAtUpdate,
-                    type = TableFieldTypeOasData.fromData(column.type)
+                    type = TableFieldTypeOasData.fromData(column.type),
+                    sqlData = column,
                 )
             }
 
             return TableOasData(
                 name = data.name.prettyName,
                 fields = fields,
-                endpoints = Config.OasConfig.CRUD.entries.filter { it !in config.ignoreMethods }.toSet()
+                endpoints = Config.OasConfig.CRUD.entries.filter { it !in config.ignoreMethods }.toSet(),
+                sqlData = data,
             )
         }
     }
