@@ -20,14 +20,14 @@ data class DefaultCodeFile(
             yield(DefaultCodeFile(relativePackageNames = relativePackageNames, fileName = fileName))
         }
 
-        fun all(connectionType: Config.ConnectionType) = sequence {
+        fun all(config: Config) = sequence {
             yield(listOf("column_type"), "DefaultJsonColumnType.kt")
             yield(listOf("column_type"), "DomainColumnType.kt")
             yield(listOf("column_type"), "PgStructUtil.kt")
             yield(listOf("column_type"), "UnconstrainedNumericColumnType.kt")
             yield(listOf("column_type"), "Util.kt")
             yield(listOf("column_type"), "PgVectorColumnType.kt")
-            if (connectionType == Config.ConnectionType.JDBC) {
+            if (config.connectionType == Config.ConnectionType.JDBC) {
                 yield(listOf("column_type"), "IntMultiRange.kt")
                 yield(listOf("column_type"), "IntRange.kt")
                 yield(listOf("column_type"), "MultiRange.kt")
@@ -38,14 +38,16 @@ data class DefaultCodeFile(
             yield(listOf("util"), "Dsl.kt")
             yield(listOf("util"), "ConnectionConfig.kt")
             yield(listOf("util"), "IConnectionProperties.kt")
-            when (connectionType) {
+            when (config.connectionType) {
                 Config.ConnectionType.JDBC -> yield(listOf("util"), "JdbcDsl.kt")
                 Config.ConnectionType.R2DBC -> yield(listOf("util"), "R2dbcDsl.kt")
             }
-            when (connectionType) {
+            when (config.connectionType) {
                 Config.ConnectionType.JDBC -> yield(listOf("column_type"), "UtilJdbc.kt")
                 Config.ConnectionType.R2DBC -> yield(listOf("column_type"), "UtilR2dbc.kt")
             }
+            if (config.addJacksonUtils)
+                yield(listOf("util"), "JacksonUtil.kt")
         }
     }
 }

@@ -30,6 +30,7 @@ data class Config(
     val connectionType: ConnectionType,
     val kotlinInstantType: Boolean, // TODO remove when Exposed v1 is stable
     val oasConfig: OasConfig?,
+    val addJacksonUtils: Boolean,
 ) {
     enum class ConnectionType {
         JDBC, R2DBC
@@ -115,7 +116,7 @@ data class Config(
             }
 
             fun mapper(packageOasModel: String) = apply {
-                mapper = Mapper(packageOasModel = packageOasModel,)
+                mapper = Mapper(packageOasModel = packageOasModel)
             }
 
             fun build() = OasConfig(
@@ -357,7 +358,9 @@ data class Config(
         private var connectionType: ConnectionType = ConnectionType.JDBC
         private var kotlinInstantType: Boolean = true
         private var oasConfig: OasConfig? = null
+        private var addJacksonUtils: Boolean = false
 
+        fun addJacksonUtils(value: Boolean) = apply { addJacksonUtils = value }
         fun connectionType(type: ConnectionType) = apply { connectionType = type }
         fun packageName(name: String) = apply { packageName = name }
         fun outputPath(path: String) = apply { outputPath = Path(path) }
@@ -391,6 +394,7 @@ data class Config(
             connectionType = connectionType,
             kotlinInstantType = kotlinInstantType,
             oasConfig = oasConfig,
+            addJacksonUtils = addJacksonUtils,
         )
     }
 

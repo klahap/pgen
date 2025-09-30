@@ -147,7 +147,7 @@ private fun generateCode(config: Config) {
     ).run {
         println("sync code files to ${config.outputPath}")
         directorySync(config.outputPath) {
-            DefaultCodeFile.all(connectionType = config.connectionType).forEach { sync(it) }
+            DefaultCodeFile.all(config = config).forEach { sync(it) }
             spec.enums.forEach { sync(it) }
             syncCodecs(spec.enums)
             spec.compositeTypes.forEach { sync(it) }
