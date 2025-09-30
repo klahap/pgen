@@ -227,6 +227,7 @@ fun main() {
                 }
             }
         }
+        addJacksonUtils(true)
         packageName("io.github.klahap.pgen")
         outputPath("$testRepo/pgen/src/main/kotlin")
         specFilePath("$testRepo/pgen/src/main/resources/pgen-spec.yaml")

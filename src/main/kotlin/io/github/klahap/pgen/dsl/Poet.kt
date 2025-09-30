@@ -27,6 +27,16 @@ fun buildEnum(
     block: TypeSpec.Builder.() -> Unit,
 ) = TypeSpec.enumBuilder(name).apply(block).build()
 
+fun buildInterface(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = TypeSpec.interfaceBuilder(name).apply(block).build()
+
+fun FileSpec.Builder.addInterface(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = addType(TypeSpec.interfaceBuilder(name).apply(block).build())
+
 fun buildClass(
     name: String,
     block: TypeSpec.Builder.() -> Unit,

@@ -2,6 +2,7 @@ package io.github.klahap.pgen.util.codegen
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asTypeName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.dsl.fileSpec
@@ -18,6 +19,7 @@ import io.github.klahap.pgen.service.DirectorySyncService
 import io.github.klahap.pgen.util.DefaultCodeFile
 import io.github.klahap.pgen.util.codegen.oas.addEnumMapper
 import io.github.klahap.pgen.util.codegen.oas.addTableMapper
+import io.github.klahap.pgen.util.codegen.oas.addTableService
 import java.time.OffsetDateTime
 
 object Poet {
@@ -77,9 +79,22 @@ object Poet {
     val updateBuilder = packageExposedCore.plus("statements").className("UpdateBuilder")
 
     val jsonColumn = packageExposedJson.className("json")
-    val option = ClassName("io.github.goquati.kotlin.util","Option")
-    val optionTakeSome = ClassName("io.github.goquati.kotlin.util","takeSome")
-    val optionMap = ClassName("io.github.goquati.kotlin.util","map")
+    val option = ClassName("io.github.goquati.kotlin.util", "Option")
+    val optionTakeSome = ClassName("io.github.goquati.kotlin.util", "takeSome")
+    val optionMap = ClassName("io.github.goquati.kotlin.util", "map")
+    val dbR2dbc = ClassName("org.jetbrains.exposed.v1.r2dbc", "R2dbcDatabase")
+    val quatiException = ClassName("io.github.goquati.kotlin.util", "QuatiException")
+    val flowSingleOrNull = ClassName("kotlinx.coroutines.flow", "singleOrNull")
+    val r2dbcUpdateReturning = ClassName("org.jetbrains.exposed.v1.r2dbc", "updateReturning")
+    val r2dbcInsertReturning = ClassName("org.jetbrains.exposed.v1.r2dbc", "insertReturning")
+    val r2dbcSelectAll = ClassName("org.jetbrains.exposed.v1.r2dbc", "selectAll")
+    val r2dbcDeleteWhere = ClassName("org.jetbrains.exposed.v1.r2dbc", "deleteWhere")
+    val r2dbcSuspendTransaction = ClassName("org.jetbrains.exposed.v1.r2dbc.transactions", "suspendTransaction")
+    val eq = ClassName("org.jetbrains.exposed.v1.core.SqlExpressionBuilder", "eq")
+    val opBoolean = ClassName("org.jetbrains.exposed.v1.core", "Op").parameterizedBy(Boolean::class.asTypeName())
+    val sqlExpressionBuilder = ClassName("org.jetbrains.exposed.v1.core", "SqlExpressionBuilder")
+    val channelFlow = ClassName("kotlinx.coroutines.flow", "channelFlow")
+    val flowMap = ClassName("kotlinx.coroutines.flow", "map")
 }
 
 context(c: CodeGenContext)
@@ -160,19 +175,36 @@ fun DirectorySyncService.sync(
     obj: TableOasData,
     block: FileSpec.Builder.() -> Unit = {},
 ) {
-    val fileName = "${obj.nameCapitalized}.kt"
-    val packageName = c.poet.packageMapper
-    sync(
-        relativePath = packageName.toRelativePath() + "/$fileName",
-        content = fileSpec(
-            packageName = packageName,
-            name = fileName,
-            block = {
-                addTableMapper(obj)
-                block()
-            }
+    run {
+        val fileName = "${obj.nameCapitalized}.kt"
+        val packageName = c.poet.packageMapper
+        sync(
+            relativePath = packageName.toRelativePath() + "/$fileName",
+            content = fileSpec(
+                packageName = packageName,
+                name = fileName,
+                block = {
+                    addTableMapper(obj)
+                    block()
+                }
+            )
         )
-    )
+    }
+    if (c.connectionType == Config.ConnectionType.R2DBC) {
+        val fileName = obj.getOasServiceName() + ".kt"
+        val packageName = c.poet.packageService
+        sync(
+            relativePath = packageName.toRelativePath() + "/$fileName",
+            content = fileSpec(
+                packageName = packageName,
+                name = fileName,
+                block = {
+                    addTableService(obj)
+                    block()
+                }
+            )
+        )
+    }
 }
 
 context(c: CodeGenContext)

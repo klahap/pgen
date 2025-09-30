@@ -31,6 +31,7 @@ data class TableOasData(
     context(mapperConfig: Config.OasConfig.Mapper)
     fun getOasCreateType() = ClassName(mapperConfig.packageOasModel, "${nameCapitalized}CreateDto")
 
+    fun getOasServiceName() = "I${nameCapitalized}Service"
     companion object {
         fun fromData(data: Table, config: Config.OasConfig.Table): TableOasData {
             val fields = data.columns.mapNotNull { column ->
