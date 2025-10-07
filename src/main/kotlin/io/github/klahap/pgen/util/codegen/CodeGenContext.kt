@@ -74,9 +74,13 @@ class CodeGenContext(
         private val packageUtil = PackageName("$rootPackageName.util")
         val packageMapper = PackageName("$rootPackageName.mapper")
         val packageService = PackageName("$rootPackageName.service")
+        val sharedPackageName = PackageName("$rootPackageName.shared")
 
         val getArrayColumnType = packageCustomColumn.className("getArrayColumnType")
         val domainType = packageCustomColumn.className("domainType")
+        val regClass = sharedPackageName.className("RegClass")
+        val regClassColumn = packageCustomColumn.className("regClass")
+        val regClassColumnType = packageCustomColumn.className("RegClassColumnType")
         val domainTypeColumn = packageCustomColumn.className("DomainTypeColumn")
         val customEnumerationArray = packageCustomColumn.className("customEnumerationArray")
         val multiRange = packageCustomColumn.className("MultiRange")

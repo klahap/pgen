@@ -16,7 +16,7 @@ import io.github.klahap.pgen.model.sql.Statement
 import io.github.klahap.pgen.service.DbService
 import io.github.klahap.pgen.service.DirectorySyncService
 import io.github.klahap.pgen.service.DirectorySyncService.Companion.directorySync
-import io.github.klahap.pgen.util.DefaultCodeFile
+import io.github.klahap.pgen.util.StaticCodeFile
 import io.github.klahap.pgen.service.EnvFileService
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.CodeGenContext.Companion.getColumnTypeGroups
@@ -148,7 +148,7 @@ private fun generateCode(config: Config) {
     ).run {
         println("sync code files to ${config.outputPath}")
         directorySync(config.outputPath) {
-            DefaultCodeFile.all(config = config).forEach { sync(it) }
+            StaticCodeFile.allDefaultCode(config = config).forEach { sync(it) }
             spec.enums.forEach { sync(it) }
             syncCodecs(spec.enums)
             spec.compositeTypes.forEach { sync(it) }
@@ -156,6 +156,11 @@ private fun generateCode(config: Config) {
             spec.tables.map { it.update() }.forEach { sync(it) }
             spec.statements.groupBy { it.name.dbName }.values.forEach { sync(it) }
             syncOasMappers(config, spec)
+            cleanup()
+        }
+        println("sync shared code files to ${config.outputPath}")
+        directorySync(config.outputPathSharedCode, silent = true) {
+            StaticCodeFile.allSharedCode(config = config).forEach { sync(it) }
             cleanup()
         }
     }
@@ -234,6 +239,7 @@ fun main() {
         addJacksonUtils(true)
         packageName("io.github.klahap.pgen")
         outputPath("$testRepo/pgen/src/main/kotlin")
+        outputPathSharedCode("$testRepo/pgen/shared/src/main/kotlin")
         specFilePath("$testRepo/pgen/src/main/resources/pgen-spec.yaml")
         createDirectoriesForRootPackageName(false)
         connectionType(Config.ConnectionType.R2DBC)

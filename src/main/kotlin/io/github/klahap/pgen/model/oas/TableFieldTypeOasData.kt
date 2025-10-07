@@ -63,6 +63,7 @@ sealed interface TableFieldTypeOasData {
             Column.Type.Primitive.UUID -> Type(type = "string", format = "uuid")
             Column.Type.Primitive.VARCHAR -> Type(type = "string")
             Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> Type(type = "number")
+            Column.Type.Primitive.REG_CLASS -> Type(type = "string", format = "regclass")
         }
     }
 }

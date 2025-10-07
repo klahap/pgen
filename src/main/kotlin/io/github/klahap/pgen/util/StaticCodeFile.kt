@@ -3,30 +3,59 @@ package io.github.klahap.pgen.util
 import io.github.klahap.pgen.model.config.Config
 import io.github.klahap.pgen.util.codegen.CodeGenContext
 
-data class DefaultCodeFile(
-    private val relativePackageNames: List<String>,
-    val fileName: String,
-) {
+sealed interface StaticCodeFile {
+    val relativePackageNames: List<String>
+    val fileName: String
+
+    data class SharedCodeFile(
+        override val relativePackageNames: List<String>,
+        override val fileName: String,
+    ) : StaticCodeFile
+
+    data class DefaultCodeFile(
+        override val relativePackageNames: List<String>,
+        override val fileName: String,
+    ) : StaticCodeFile
+
+
     val relativePath get() = (relativePackageNames + listOf(fileName)).joinToString("/")
+    private val rootPath
+        get() = when (this) {
+            is DefaultCodeFile -> "/default_code"
+            is SharedCodeFile -> "/shared_code"
+        }
 
     context(c: CodeGenContext)
-    fun getContent(): String = javaClass.getResourceAsStream("/default_code/$relativePath")!!
+    fun getContent(): String = javaClass.getResourceAsStream("$rootPath/$relativePath")!!
         .readAllBytes().decodeToString()
         .replaceFirst("package default_code", "package ${c.poet.rootPackageName}")
         .replace("import default_code", "import ${c.poet.rootPackageName}")
+        .replaceFirst("package shared_code", "package ${c.poet.sharedPackageName}")
+        .replace("import shared_code", "import ${c.poet.sharedPackageName}")
 
-    companion object {
+    companion object Companion {
+        @JvmName("yieldSharedCodeFile")
+        suspend fun SequenceScope<SharedCodeFile>.yield(relativePackageNames: List<String>, fileName: String) {
+            yield(SharedCodeFile(relativePackageNames = relativePackageNames, fileName = fileName))
+        }
+
+        @JvmName("yieldDefaultCodeFile")
         suspend fun SequenceScope<DefaultCodeFile>.yield(relativePackageNames: List<String>, fileName: String) {
             yield(DefaultCodeFile(relativePackageNames = relativePackageNames, fileName = fileName))
         }
 
-        fun all(config: Config) = sequence {
+        fun allSharedCode(config: Config) = sequence<SharedCodeFile> {
+            yield(listOf(), "RegClass.kt")
+        }
+
+        fun allDefaultCode(config: Config) = sequence<DefaultCodeFile> {
             yield(listOf("column_type"), "DefaultJsonColumnType.kt")
             yield(listOf("column_type"), "DomainColumnType.kt")
             yield(listOf("column_type"), "PgStructUtil.kt")
             yield(listOf("column_type"), "UnconstrainedNumericColumnType.kt")
             yield(listOf("column_type"), "Util.kt")
             yield(listOf("column_type"), "PgVectorColumnType.kt")
+            yield(listOf("column_type"), "RegClass.kt")
             if (config.connectionType == Config.ConnectionType.JDBC) {
                 yield(listOf("column_type"), "IntMultiRange.kt")
                 yield(listOf("column_type"), "IntRange.kt")

@@ -240,6 +240,13 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
             "registerColumn(name = %S, type = %T())$postfix",
             columnName, c.poet.unconstrainedNumericColumnType, *postArgs
         )
+
+        Column.Type.Primitive.REG_CLASS -> @Suppress("SpreadOperator") initializer(
+            "%T(name = %S)$postfix".trimIndent(),
+            c.poet.regClassColumn,
+            columnName,
+            *postArgs
+        )
     }
 }
 

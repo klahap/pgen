@@ -44,6 +44,7 @@ fun Column.Type.getTypeName(innerArrayType: Boolean = true): TypeName = when (th
     Column.Type.Primitive.TIMESTAMP_WITH_TIMEZONE -> Poet.offsetDateTime
     Column.Type.Primitive.UUID -> UUID::class.asTypeName()
     Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> BigDecimal::class.asTypeName()
+    Column.Type.Primitive.REG_CLASS -> c.poet.regClass
 }
 
 private fun codeBlock(format: String, vararg args: Any) = CodeBlock.builder().add(format, *args).build()
@@ -98,4 +99,5 @@ fun Column.Type.getExposedColumnType(): CodeBlock = when (this) {
     Column.Type.Primitive.JSON -> codeBlock("%T()", c.poet.defaultJsonColumnType)
     Column.Type.Primitive.JSONB -> codeBlock("%T()", c.poet.defaultJsonColumnType)
     Column.Type.Primitive.UNCONSTRAINED_NUMERIC -> codeBlock("%T()", c.poet.unconstrainedNumericColumnType)
+    Column.Type.Primitive.REG_CLASS -> codeBlock("%T()", c.poet.regClassColumnType)
 }

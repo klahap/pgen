@@ -182,6 +182,7 @@ data class Column(
             UUID("uuid"),
             VARCHAR("varchar"),
             UNCONSTRAINED_NUMERIC("numeric"),
+            REG_CLASS("regclass"),
         }
     }
 }

@@ -16,7 +16,7 @@ import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.model.sql.Column.Type.NonPrimitive.Domain
 import io.github.klahap.pgen.model.sql.CompositeType
 import io.github.klahap.pgen.service.DirectorySyncService
-import io.github.klahap.pgen.util.DefaultCodeFile
+import io.github.klahap.pgen.util.StaticCodeFile
 import io.github.klahap.pgen.util.codegen.oas.addEnumMapper
 import io.github.klahap.pgen.util.codegen.oas.addTableMapper
 import io.github.klahap.pgen.util.codegen.oas.addTableService
@@ -225,7 +225,7 @@ fun DirectorySyncService.syncCodecs(
 }
 
 context(c: CodeGenContext)
-fun DirectorySyncService.sync(codeFile: DefaultCodeFile) {
+fun DirectorySyncService.sync(codeFile: StaticCodeFile) {
     sync(
         relativePath = codeFile.relativePath,
         content = codeFile.getContent()

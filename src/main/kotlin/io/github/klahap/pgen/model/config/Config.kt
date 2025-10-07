@@ -27,6 +27,7 @@ data class Config(
     val dbConfigs: List<Db>,
     val packageName: PackageName,
     val outputPath: Path,
+    val outputPathSharedCode: Path,
     val specFilePath: Path,
     val createDirectoriesForRootPackageName: Boolean,
     val connectionType: ConnectionType,
@@ -385,6 +386,7 @@ data class Config(
         private val dbConfigs: MutableList<Db> = mutableListOf()
         private var packageName: String? = null
         private var outputPath: Path? = null
+        private var outputPathSharedCode: Path? = null
         private var specFilePath: Path? = null
         private var createDirectoriesForRootPackageName: Boolean = true
         private var connectionType: ConnectionType = ConnectionType.JDBC
@@ -397,6 +399,8 @@ data class Config(
         fun packageName(name: String) = apply { packageName = name }
         fun outputPath(path: String) = apply { outputPath = Path(path) }
         fun outputPath(path: Path) = apply { outputPath = path }
+        fun outputPathSharedCode(path: String) = apply { outputPathSharedCode = Path(path) }
+        fun outputPathSharedCode(path: Path) = apply { outputPathSharedCode = path }
         fun specFilePath(path: String) = apply { specFilePath = Path(path) }
         fun specFilePath(path: Path) = apply { specFilePath = path }
         fun createDirectoriesForRootPackageName(value: Boolean) = apply { createDirectoriesForRootPackageName = value }
@@ -421,6 +425,7 @@ data class Config(
                 .takeIf { it.isNotEmpty() } ?: error("no DB config defined"),
             packageName = packageName?.let { PackageName(it) } ?: error("no output package defined"),
             outputPath = outputPath ?: error("no output path defined"),
+            outputPathSharedCode = outputPathSharedCode ?: error("no shared output path defined"),
             specFilePath = specFilePath ?: error("no path pgen spec file defined"),
             createDirectoriesForRootPackageName = createDirectoriesForRootPackageName,
             connectionType = connectionType,

@@ -6,7 +6,8 @@ import java.nio.file.Path
 import kotlin.io.path.*
 
 class DirectorySyncService(
-    private val directory: Path
+    private val directory: Path,
+    private val silent: Boolean = false,
 ) : Closeable {
     private var filesCreated = mutableSetOf<Path>()
     private var filesUpdated = mutableSetOf<Path>()
@@ -51,16 +52,21 @@ class DirectorySyncService(
     }
 
     override fun close() {
-        fun Set<*>.printSize() = size.toString().padStart(3)
-        println("#files unchanged = ${filesUnchanged.printSize()}")
-        println("#files created   = ${filesCreated.printSize()}")
-        println("#files updated   = ${filesUpdated.printSize()}")
-        println("#files deleted   = ${filesDeleted.printSize()}")
+        if (!silent) {
+            fun Set<*>.printSize() = size.toString().padStart(3)
+            println("#files unchanged = ${filesUnchanged.printSize()}")
+            println("#files created   = ${filesCreated.printSize()}")
+            println("#files updated   = ${filesUpdated.printSize()}")
+            println("#files deleted   = ${filesDeleted.printSize()}")
+        }
     }
 
     companion object {
-        fun directorySync(directory: Path, block: DirectorySyncService.() -> Unit) =
-            DirectorySyncService(directory).use(block)
+        fun directorySync(
+            directory: Path,
+            silent: Boolean = false,
+            block: DirectorySyncService.() -> Unit,
+        ) = DirectorySyncService(directory, silent = silent).use(block)
 
         fun sync(
             path: Path,
