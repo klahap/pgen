@@ -26,7 +26,7 @@ class CodeGenContext(
     val localConfigContext = localConfigContext?.let { c ->
         c.copy(
             type = ClassName(
-                c.type.packageName.takeIf { it != "default" } ?: "$rootPackageName.util",
+                c.type.packageName.takeIf { it != "default" } ?: "$rootPackageName.shared",
                 c.type.simpleName,
             )
         )

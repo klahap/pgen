@@ -46,6 +46,7 @@ sealed interface StaticCodeFile {
 
         fun allSharedCode(config: Config) = sequence<SharedCodeFile> {
             yield(listOf(), "RegClass.kt")
+            yield(listOf(), "LocalConfigContext.kt")
         }
 
         fun allDefaultCode(config: Config) = sequence<DefaultCodeFile> {
@@ -67,7 +68,6 @@ sealed interface StaticCodeFile {
             yield(listOf("util"), "Dsl.kt")
             yield(listOf("util"), "ConnectionConfig.kt")
             yield(listOf("util"), "IConnectionProperties.kt")
-            yield(listOf("util"), "LocalConfigContext.kt")
             when (config.connectionType) {
                 Config.ConnectionType.JDBC -> yield(listOf("util"), "JdbcDsl.kt")
                 Config.ConnectionType.R2DBC -> yield(listOf("util"), "R2dbcDsl.kt")
