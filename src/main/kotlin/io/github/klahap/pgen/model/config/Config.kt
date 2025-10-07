@@ -1,5 +1,7 @@
 package io.github.klahap.pgen.model.config
 
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.TypeName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.sql.DbName
 import io.github.klahap.pgen.model.sql.KotlinClassName
@@ -44,7 +46,31 @@ data class Config(
         val pathPrefix: String,
         val mapper: Mapper?,
         val tables: List<Table>,
+        val localConfigContext: LocalConfigContext?,
     ) {
+        data class LocalConfigContext(
+            val type: ClassName,
+            val atMethods: Set<CRUD>,
+        ) {
+            class Builder {
+                private var type: ClassName = ClassName("default", "ILocalConfigContext")
+                private var atMethods: Set<CRUD> = CRUD.entries.toSet()
+
+                fun type(type: String) {
+                    this.type = ClassName(
+                        type.substringBeforeLast('.'),
+                        type.substringAfterLast('.'),
+                    )
+                }
+
+                fun atMethods(vararg crud: CRUD) = apply { atMethods = crud.toSet() }
+                fun build() = LocalConfigContext(
+                    type = type ?: error("no local config context type defined"),
+                    atMethods = atMethods.toSet(),
+                )
+            }
+        }
+
 
         data class Table(
             val name: SqlObjectName,
@@ -93,11 +119,16 @@ data class Config(
             var oasRootPath: Path? = null
             var oasCommonName: String = "Common"
             var pathPrefix: String = "/api"
+            private var localConfigContext: LocalConfigContext? = null
             private var mapper: Mapper? = null
             private val tables: MutableList<Table> = mutableListOf()
             private val defaultIgnoreFields: MutableSet<String> = mutableSetOf()
             private val defaultIgnoreFieldsAtCreate: MutableSet<String> = mutableSetOf()
             private val defaultIgnoreFieldsAtUpdate: MutableSet<String> = mutableSetOf()
+
+            fun localConfigContext(block: LocalConfigContext.Builder.() -> Unit) {
+                localConfigContext = LocalConfigContext.Builder().apply(block).build()
+            }
 
             fun oasRootPath(path: String) = apply { oasRootPath = Path(path) }
             fun oasRootPath(path: Path) = apply { oasRootPath = path }
@@ -133,6 +164,7 @@ data class Config(
                         ignoreFieldsAtCreate = it.ignoreFieldsAtCreate + defaultIgnoreFieldsAtCreate,
                     )
                 },
+                localConfigContext = localConfigContext,
             )
 
             companion object {

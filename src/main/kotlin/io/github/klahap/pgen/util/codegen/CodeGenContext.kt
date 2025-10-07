@@ -3,6 +3,7 @@ package io.github.klahap.pgen.util.codegen
 import com.squareup.kotlinpoet.ClassName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.config.Config
+import io.github.klahap.pgen.model.config.Config.OasConfig.LocalConfigContext
 import io.github.klahap.pgen.model.sql.Column
 import io.github.klahap.pgen.model.sql.KotlinClassName
 import io.github.klahap.pgen.model.sql.KotlinEnumClass
@@ -20,7 +21,17 @@ class CodeGenContext(
     typeGroups: List<Set<SqlColumnName>>,
     val connectionType: Config.ConnectionType,
     val kotlinInstantType: Boolean,
+    localConfigContext: LocalConfigContext?,
 ) {
+    val localConfigContext = localConfigContext?.let { c ->
+        c.copy(
+            type = ClassName(
+                c.type.packageName.takeIf { it != "default" } ?: "$rootPackageName.util",
+                c.type.simpleName,
+            )
+        )
+    }
+
     val allTypeOverwrites: Map<SqlColumnName, KotlinValueClass> = typeOverwrites.entries.flatMap { (column, clazz) ->
         val group = typeGroups.firstOrNull { it.contains(column) } ?: setOf(column)
         group.map { c -> c to clazz }
@@ -79,6 +90,7 @@ class CodeGenContext(
         val pgStructField = packageCustomColumn.className("PgStructField")
         val pgStructFieldJoin = packageCustomColumn.className("join")
         val getColumnWithAlias = packageUtil.className("get")
+        val setLocalConfig = packageUtil.className("setLocalConfig")
         val pgEnum = packageCustomColumn.className("PgEnum")
         val getPgEnumByLabel = packageCustomColumn.className("getPgEnumByLabel")
         val toDbObject = packageCustomColumn.className("toDbObject")

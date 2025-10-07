@@ -3,6 +3,7 @@ package default_code.column_type
 import org.jetbrains.exposed.v1.core.ColumnType
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ArrayColumnType
+import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.CustomEnumerationColumnType
 import org.jetbrains.exposed.v1.core.Table
 import kotlin.enums.enumEntries
@@ -69,4 +70,12 @@ internal fun parseFloatArray(data: String): FloatArray {
 
 interface StringLike {
     val value: String
+}
+
+object SqlStringHelper : TextColumnType() {
+    fun buildSetLocalConfigSql(key: String, value: String): String =
+        "set local ${escapeAndQuote(key)} = ${nonNullValueToString(value)};"
+
+    fun buildSetLocalConfigSql(config: Map<String, String>): String =
+        config.entries.joinToString(separator = "\n") { (k, v) -> buildSetLocalConfigSql(k, v) }
 }

@@ -21,9 +21,11 @@ import io.r2dbc.postgresql.extension.CodecRegistrar
 import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
 import org.jetbrains.exposed.v1.r2dbc.transactions.transactionManager
+import default_code.column_type.SqlStringHelper
 
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
     select(buildList(builder))
+
 fun R2dbcDatabase.Companion.connect(
     config: ConnectionConfig.Async,
     username: String? = null,
@@ -112,6 +114,58 @@ fun <T> R2dbcDatabase.transactionFlow(
         this@transactionFlow.suspendTransaction(
             readOnly = readOnly,
         ) {
+            block.block()
+        }
+    }
+}
+
+suspend fun R2dbcTransaction.setLocalConfig(key: String, value: String) {
+    val sql = SqlStringHelper.buildSetLocalConfigSql(key = key, value = value)
+    exec(sql)
+}
+
+suspend fun R2dbcTransaction.setLocalConfig(config: ILocalConfigContext) = setLocalConfig(config.data)
+suspend fun R2dbcTransaction.setLocalConfig(config: Map<String, String>) {
+    if (config.isEmpty()) return
+    val sql = SqlStringHelper.buildSetLocalConfigSql(config)
+    exec(sql)
+}
+context(c: ILocalConfigContext)
+suspend fun <T> R2dbcDatabase.suspendTransactionWithContext(
+    transactionIsolation: IsolationLevel? = null,
+    readOnly: Boolean = false,
+    statement: suspend R2dbcTransaction.() -> T
+): T = this.suspendTransaction(
+    transactionIsolation = transactionIsolation,
+    readOnly = readOnly,
+) {
+    setLocalConfig(c)
+    statement()
+}
+
+context(c: ILocalConfigContext)
+fun <T> R2dbcDatabase.blockingTransactionWithContext(
+    context: CoroutineContext = Dispatchers.IO,
+    readOnly: Boolean = false,
+    block: suspend R2dbcTransaction.() -> T,
+) = this.blockingTransaction(
+    context = context,
+    readOnly = readOnly,
+) {
+    setLocalConfig(c)
+    block()
+}
+
+context(c: ILocalConfigContext)
+fun <T> R2dbcDatabase.transactionFlowWithContext(
+    readOnly: Boolean = false,
+    block: TransactionFlowScope<T>,
+): Flow<T> {
+    return channelFlow {
+        this@transactionFlowWithContext.suspendTransaction(
+            readOnly = readOnly,
+        ) {
+            setLocalConfig(c)
             block.block()
         }
     }

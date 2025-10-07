@@ -1,5 +1,6 @@
 package io.github.klahap.pgen.util.codegen.oas
 
+import com.squareup.kotlinpoet.ExperimentalKotlinPoetApi
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
@@ -15,6 +16,7 @@ import io.github.klahap.pgen.util.codegen.CodeGenContext
 import io.github.klahap.pgen.util.codegen.Poet
 import io.github.klahap.pgen.util.codegen.getColumnTypeName
 
+@OptIn(ExperimentalKotlinPoetApi::class)
 context(c: CodeGenContext, mapperConfig: Config.OasConfig.Mapper)
 fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.getOasServiceName()) {
 
@@ -26,6 +28,8 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
     addProperty("db", Poet.dbR2dbc)
 
     addFunction("getById") {
+        val localConfigContext = c.localConfigContext?.takeIf { Config.OasConfig.CRUD.READ in it.atMethods }
+        localConfigContext?.also { contextParameter("c", it.type) }
         addModifiers(KModifier.SUSPEND)
         addParameter("id", idType)
         returns(data.sqlData.entityTypeName)
@@ -42,6 +46,8 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
     }
 
     addFunction("getAll") {
+        val localConfigContext = c.localConfigContext?.takeIf { Config.OasConfig.CRUD.READ in it.atMethods }
+        localConfigContext?.also { contextParameter("c", it.type) }
         addModifiers(KModifier.SUSPEND)
         addParameter(
             "filter",
@@ -55,6 +61,7 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
             beginControlFlow("%T(db = db, readOnly = true)", Poet.r2dbcSuspendTransaction)
             add(
                 """
+                ${"// ".takeIf { localConfigContext == null } ?: ""}%T(c)
                 %T.%T()
                 .let {
                     when (filter) {
@@ -65,6 +72,7 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
                 .%T(%T.Entity::create)
                 .collect { send(it) }
             """.trimIndent(),
+                c.poet.setLocalConfig,
                 data.sqlData.name.typeName,
                 Poet.r2dbcSelectAll,
                 Poet.flowMap,
@@ -76,6 +84,8 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
     }
 
     addFunction("create") {
+        val localConfigContext = c.localConfigContext?.takeIf { Config.OasConfig.CRUD.CREATE in it.atMethods }
+        localConfigContext?.also { contextParameter("c", it.type) }
         addModifiers(KModifier.SUSPEND)
         addParameter("data", data.sqlData.updateEntityTypeName)
         returns(data.sqlData.entityTypeName)
@@ -83,12 +93,14 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
             beginControlFlow("return %T(db = db)", Poet.r2dbcSuspendTransaction)
             add(
                 """
+                ${"// ".takeIf { localConfigContext == null } ?: ""}%T(c)
                 %T.%T(ignoreErrors = true) {
                     it.%T(data)
                 }.%T()
                     .let { it ?: throw %T.BadRequest("Cannot create ${data.namePretty}") }
                     .let(%T.Entity::create)
             """.trimIndent(),
+                c.poet.setLocalConfig,
                 data.sqlData.name.typeName,
                 Poet.r2dbcInsertReturning,
                 data.sqlData.updateEntitySetFunctionTypeName,
@@ -101,13 +113,19 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
     }
 
     addFunction("delete") {
+        val localConfigContext = c.localConfigContext?.takeIf { Config.OasConfig.CRUD.DELETE in it.atMethods }
+        localConfigContext?.also { contextParameter("c", it.type) }
         addModifiers(KModifier.SUSPEND)
         addParameter("id", idType)
         returns(UNIT)
         addCode {
             beginControlFlow("return %T(db = db)", Poet.r2dbcSuspendTransaction)
             add(
-                "%T.%T { %T.id %T id }\n",
+                """
+                ${"// ".takeIf { localConfigContext == null } ?: ""}%T(c)
+                %T.%T { %T.id %T id }
+                """.trimIndent(),
+                c.poet.setLocalConfig,
                 data.sqlData.name.typeName,
                 Poet.r2dbcDeleteWhere,
                 data.sqlData.name.typeName,
@@ -125,6 +143,8 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
     }
 
     addFunction("update") {
+        val localConfigContext = c.localConfigContext?.takeIf { Config.OasConfig.CRUD.UPDATE in it.atMethods }
+        localConfigContext?.also { contextParameter("c", it.type) }
         addModifiers(KModifier.SUSPEND)
         addParameter("id", idType)
         addParameter("data", data.sqlData.updateEntityTypeName)
@@ -133,12 +153,14 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
             beginControlFlow("return %T(db = db)", Poet.r2dbcSuspendTransaction)
             add(
                 """
+                ${"// ".takeIf { localConfigContext == null } ?: ""}%T(c)
                 %T.%T(where = { %T.id eq id }) {
                     it.%T(data)
                 }.%T()
                     .let { it ?: throw %T.BadRequest("Cannot update ${data.namePretty} with id: ${'$'}id") }
                     .let(%T.Entity::create)
                 """.trimIndent(),
+                c.poet.setLocalConfig,
                 data.sqlData.name.typeName,
                 Poet.r2dbcUpdateReturning,
                 data.sqlData.name.typeName,

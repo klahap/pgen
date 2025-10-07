@@ -144,6 +144,7 @@ private fun generateCode(config: Config) {
         typeGroups = spec.tables.getColumnTypeGroups(),
         connectionType = config.connectionType,
         kotlinInstantType = config.kotlinInstantType,
+        localConfigContext = config.oasConfig?.localConfigContext,
     ).run {
         println("sync code files to ${config.outputPath}")
         directorySync(config.outputPath) {
@@ -224,6 +225,9 @@ fun main() {
                 mapper(packageOasModel = "io.github.klahap.oas_server.oas_model")
                 table("scy.public.item") {
                     ignoreFields("embedding")
+                }
+                localConfigContext {
+
                 }
             }
         }
