@@ -92,6 +92,8 @@ object Poet {
     val r2dbcSuspendTransaction = ClassName("org.jetbrains.exposed.v1.r2dbc.transactions", "suspendTransaction")
     val eq = ClassName("org.jetbrains.exposed.v1.core.SqlExpressionBuilder", "eq")
     val opBoolean = ClassName("org.jetbrains.exposed.v1.core", "Op").parameterizedBy(Boolean::class.asTypeName())
+    val fieldSet = ClassName("org.jetbrains.exposed.v1.core", "FieldSet")
+    val query = ClassName("org.jetbrains.exposed.v1.r2dbc", "Query")
     val sqlExpressionBuilder = ClassName("org.jetbrains.exposed.v1.core", "SqlExpressionBuilder")
     val channelFlow = ClassName("kotlinx.coroutines.flow", "channelFlow")
     val flowMap = ClassName("kotlinx.coroutines.flow", "map")

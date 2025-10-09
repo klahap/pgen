@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ExperimentalKotlinPoetApi
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.UNIT
 import io.github.klahap.pgen.dsl.addCode
@@ -50,6 +51,19 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
         localConfigContext?.also { contextParameter("c", it.type) }
         addModifiers(KModifier.SUSPEND)
         addParameter(
+            "fieldSetMapper",
+            LambdaTypeName.get(null, listOf(ParameterSpec("fieldSet", Poet.fieldSet)), Poet.fieldSet)
+                .copy(nullable = true),
+        ) {
+            defaultValue("null")
+        }
+        addParameter(
+            "queryMapper",
+            LambdaTypeName.get(null, listOf(ParameterSpec("query", Poet.query)), Poet.query).copy(nullable = true),
+        ) {
+            defaultValue("null")
+        }
+        addParameter(
             "filter",
             LambdaTypeName.get(Poet.sqlExpressionBuilder, emptyList(), Poet.opBoolean).copy(nullable = true),
         ) {
@@ -62,15 +76,13 @@ fun FileSpec.Builder.addTableService(data: TableOasData) = addInterface(data.get
             add(
                 """
                 ${"// ".takeIf { localConfigContext == null } ?: ""}%T(c)
-                %T.%T()
-                .let {
-                    when (filter) {
-                        null -> it
-                        else -> it.where(filter)
-                    }
-                }
-                .%T(%T.Entity::create)
-                .collect { send(it) }
+                %T
+                    .let { if (fieldSetMapper == null) it else fieldSetMapper(it) }
+                    .%T()
+                    .let { if (filter == null) it else it.where(filter) }
+                    .let { if (queryMapper == null) it else queryMapper(it) }
+                    .%T(%T.Entity::create)
+                    .collect { send(it) }
             """.trimIndent(),
                 c.poet.setLocalConfig,
                 data.sqlData.name.typeName,
