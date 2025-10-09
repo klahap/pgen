@@ -47,6 +47,7 @@ sealed interface StaticCodeFile {
         fun allSharedCode(config: Config) = sequence<SharedCodeFile> {
             yield(listOf(), "RegClass.kt")
             yield(listOf(), "LocalConfigContext.kt")
+            yield(listOf(), "StringLike.kt")
         }
 
         fun allDefaultCode(config: Config) = sequence<DefaultCodeFile> {

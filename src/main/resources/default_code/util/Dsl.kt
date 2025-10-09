@@ -14,7 +14,7 @@ import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.ComparisonOp
 import org.jetbrains.exposed.v1.core.ExpressionWithColumnType
 import org.jetbrains.exposed.v1.core.QueryParameter
-import default_code.column_type.StringLike
+import shared_code.StringLike
 
 
 operator fun <T> ResultRow.get(column: Column<T>, alias: Alias<*>?): T = when (alias) {

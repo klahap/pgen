@@ -98,7 +98,7 @@ class CodeGenContext(
         val pgEnum = packageCustomColumn.className("PgEnum")
         val getPgEnumByLabel = packageCustomColumn.className("getPgEnumByLabel")
         val toDbObject = packageCustomColumn.className("toDbObject")
-        val stringLike = packageCustomColumn.className("StringLike")
+        val stringLike = sharedPackageName.className("StringLike")
     }
 
     companion object {

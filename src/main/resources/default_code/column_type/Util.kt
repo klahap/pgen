@@ -68,10 +68,6 @@ internal fun parseFloatArray(data: String): FloatArray {
     return cleaned.split(",").map { it.trim().toFloat() }.toFloatArray()
 }
 
-interface StringLike {
-    val value: String
-}
-
 object SqlStringHelper : TextColumnType() {
     fun buildSetLocalConfigSql(key: String, value: String): String =
         "set local ${escapeAndQuote(key)} = ${nonNullValueToString(value)};"
