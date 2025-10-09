@@ -14,6 +14,7 @@ import org.jetbrains.exposed.v1.core.TextColumnType
 import org.jetbrains.exposed.v1.core.ComparisonOp
 import org.jetbrains.exposed.v1.core.ExpressionWithColumnType
 import org.jetbrains.exposed.v1.core.QueryParameter
+import org.jetbrains.exposed.v1.core.anyFrom
 import shared_code.StringLike
 
 
@@ -52,8 +53,10 @@ fun <T : Any> arrayAgg(
 fun arrayAgg(exp: Expression<out String?>): CustomFunction<List<String?>> =
     arrayAgg(TextColumnType(), exp)
 
-class LikeOp(expr1: Expression<*>, expr2: Expression<*>) : ComparisonOp(expr1, expr2, "LIKE")
-class InsensitiveLikeOp(expr1: Expression<*>, expr2: Expression<*>) : ComparisonOp(expr1, expr2, "ILIKE")
+private class LikeOp(expr1: Expression<*>, expr2: Expression<*>) : ComparisonOp(expr1, expr2, "LIKE")
+private class InsensitiveLikeOp(expr1: Expression<*>, expr2: Expression<*>) : ComparisonOp(expr1, expr2, "ILIKE")
+private class ContainsOp(expr1: Expression<List<String>?>, expr2: Expression<String>) :
+    ComparisonOp(expr2, anyFrom(expr1), "=")
 
 infix fun <T : StringLike?> ExpressionWithColumnType<T>.like(pattern: String): Op<Boolean> =
     LikeOp(this, QueryParameter(pattern, TextColumnType()))
@@ -65,3 +68,8 @@ infix fun <T : String?> ExpressionWithColumnType<T>.iLike(pattern: T): Op<Boolea
 @JvmName("iLikeStringLike")
 infix fun <T : StringLike?> ExpressionWithColumnType<T>.iLike(pattern: String): Op<Boolean> =
     InsensitiveLikeOp(this, QueryParameter(pattern, TextColumnType()))
+
+infix fun ExpressionWithColumnType<List<String>?>.arrayContains(pattern: String): Op<Boolean> = ContainsOp(
+    expr1 = this,
+    expr2 = QueryParameter(value = pattern, sqlType = TextColumnType()),
+)
