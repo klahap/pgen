@@ -26,7 +26,7 @@ object Poet {
     val json = ClassName("kotlinx.serialization.json", "Json")
     val jsonElement = ClassName("kotlinx.serialization.json", "JsonElement")
 
-    val duration = ClassName("kotlinx.datetime", "Duration")
+    val duration = ClassName("kotlin.time", "Duration")
     val localTime = ClassName("kotlinx.datetime", "LocalTime")
     val localDate = ClassName("kotlinx.datetime", "LocalDate")
     val offsetDateTime = OffsetDateTime::class.asTypeName()
@@ -47,6 +47,7 @@ object Poet {
 
     val date = packageExposedDatetime.className("date")
     val time = packageExposedDatetime.className("time")
+    val durationColumn = packageExposedDatetime.className("duration")
     val timestamp = packageExposedDatetime.className("timestamp")
     val timestampWithTimeZone = packageExposedDatetime.className("timestampWithTimeZone")
     val defaultExpTimestamp = packageExposedDatetime.className("CurrentTimestamp")

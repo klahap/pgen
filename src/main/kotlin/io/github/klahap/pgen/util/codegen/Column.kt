@@ -152,8 +152,8 @@ fun PropertySpec.Builder.initializer(column: Column, postfix: String, postArgs: 
         )
 
         Column.Type.Primitive.INTERVAL -> @Suppress("SpreadOperator") initializer(
-            "duration(name = %S)$postfix",
-            columnName, *postArgs
+            "%T(name = %S)$postfix",
+            Poet.durationColumn, columnName, *postArgs
         )
 
         Column.Type.Primitive.INT4RANGE -> @Suppress("SpreadOperator") initializer(
