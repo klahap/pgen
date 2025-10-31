@@ -22,10 +22,31 @@ import com.fasterxml.jackson.databind.type.TypeBindings
 import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.type.TypeModifier
 import com.fasterxml.jackson.databind.util.NameTransformer
+import com.fasterxml.jackson.databind.module.SimpleModule
 import io.github.goquati.kotlin.util.Option
 import io.github.goquati.kotlin.util.isSome
 import io.github.goquati.kotlin.util.takeSome
 import java.lang.reflect.Type
+import kotlin.reflect.KClass
+
+
+interface QuatiJacksonStringSerializer<T : Any> {
+    val clazz: KClass<T>
+    val jSerializer: JsonSerializer<T>
+    val jDeserializer: JsonDeserializer<T>
+}
+
+fun ObjectMapper.registerSimpleModule(block: SimpleModule.() -> Unit) =
+    registerModule(SimpleModule().apply(block))
+
+fun <T : Any> SimpleModule.add(serializer: QuatiJacksonStringSerializer<T>) {
+    addDeserializer(serializer.clazz.java, serializer.jDeserializer)
+    addSerializer(serializer.clazz.java, serializer.jSerializer)
+}
+
+fun SimpleModule.add(serializers: Iterable<QuatiJacksonStringSerializer<*>>) {
+    serializers.forEach { add(it) }
+}
 
 class OptionSerializer : ReferenceTypeSerializer<Option<*>> {
     constructor(
