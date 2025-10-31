@@ -15,9 +15,20 @@ import org.jetbrains.exposed.v1.core.ComparisonOp
 import org.jetbrains.exposed.v1.core.ExpressionWithColumnType
 import org.jetbrains.exposed.v1.core.QueryParameter
 import org.jetbrains.exposed.v1.core.anyFrom
+import org.jetbrains.exposed.v1.core.QueryBuilder
 import shared_code.StringLike
 
+object IsInsert : Expression<Boolean>() {
+    override fun toQueryBuilder(queryBuilder: QueryBuilder) {
+        queryBuilder.append("xmax = 0")
+    }
+}
 
+object IsUpdate : Expression<Boolean>() {
+    override fun toQueryBuilder(queryBuilder: QueryBuilder) {
+        queryBuilder.append("xmax != 0")
+    }
+}
 operator fun <T> ResultRow.get(column: Column<T>, alias: Alias<*>?): T = when (alias) {
     null -> this[column]
     else -> this[alias[column]]
