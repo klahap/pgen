@@ -1,7 +1,6 @@
 package io.github.klahap.pgen.model.config
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.TypeName
 import io.github.klahap.pgen.dsl.PackageName
 import io.github.klahap.pgen.model.sql.DbName
 import io.github.klahap.pgen.model.sql.KotlinClassName
@@ -34,6 +33,7 @@ data class Config(
     val kotlinInstantType: Boolean, // TODO remove when Exposed v1 is stable
     val oasConfig: OasConfig?,
     val addJacksonUtils: Boolean,
+    val addKotlinxJsonUtils: Boolean,
 ) {
     enum class ConnectionType {
         JDBC, R2DBC
@@ -393,8 +393,10 @@ data class Config(
         private var kotlinInstantType: Boolean = true
         private var oasConfig: OasConfig? = null
         private var addJacksonUtils: Boolean = false
+        private var addKotlinxJsonUtils: Boolean = false
 
         fun addJacksonUtils(value: Boolean) = apply { addJacksonUtils = value }
+        fun addKotlinxJsonUtils(value: Boolean) = apply { addKotlinxJsonUtils = value }
         fun connectionType(type: ConnectionType) = apply { connectionType = type }
         fun packageName(name: String) = apply { packageName = name }
         fun outputPath(path: String) = apply { outputPath = Path(path) }
@@ -432,6 +434,7 @@ data class Config(
             kotlinInstantType = kotlinInstantType,
             oasConfig = oasConfig,
             addJacksonUtils = addJacksonUtils,
+            addKotlinxJsonUtils = addKotlinxJsonUtils,
         )
     }
 

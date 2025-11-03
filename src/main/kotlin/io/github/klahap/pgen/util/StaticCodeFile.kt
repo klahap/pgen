@@ -79,6 +79,10 @@ sealed interface StaticCodeFile {
             }
             if (config.addJacksonUtils)
                 yield(listOf("util"), "JacksonUtil.kt")
+            if (config.addKotlinxJsonUtils)
+                yield(listOf("util"), "KotlinxJsonUtil.kt")
+            if (config.addJacksonUtils && config.addKotlinxJsonUtils)
+                yield(listOf("util"), "QuatiStringSerializer.kt")
         }
     }
 }
