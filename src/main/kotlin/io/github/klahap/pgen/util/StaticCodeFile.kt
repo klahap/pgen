@@ -70,12 +70,16 @@ sealed interface StaticCodeFile {
             yield(listOf("util"), "ConnectionConfig.kt")
             yield(listOf("util"), "IConnectionProperties.kt")
             when (config.connectionType) {
-                Config.ConnectionType.JDBC -> yield(listOf("util"), "JdbcDsl.kt")
-                Config.ConnectionType.R2DBC -> yield(listOf("util"), "R2dbcDsl.kt")
-            }
-            when (config.connectionType) {
-                Config.ConnectionType.JDBC -> yield(listOf("column_type"), "UtilJdbc.kt")
-                Config.ConnectionType.R2DBC -> yield(listOf("column_type"), "UtilR2dbc.kt")
+                Config.ConnectionType.JDBC -> {
+                    yield(listOf("util"), "JdbcDsl.kt")
+                    yield(listOf("column_type"), "UtilJdbc.kt")
+                }
+
+                Config.ConnectionType.R2DBC -> {
+                    yield(listOf("util"), "R2dbcDsl.kt")
+                    yield(listOf("util"), "R2dbcSyncStatement.kt")
+                    yield(listOf("column_type"), "UtilR2dbc.kt")
+                }
             }
             if (config.addJacksonUtils)
                 yield(listOf("util"), "JacksonUtil.kt")
