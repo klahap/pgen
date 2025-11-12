@@ -1,5 +1,6 @@
 package default_code.util
 
+import io.github.goquati.kotlin.util.Result
 import io.r2dbc.spi.IsolationLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
@@ -171,3 +172,16 @@ fun <T> R2dbcDatabase.transactionFlowWithContext(
         }
     }
 }
+
+suspend fun <T> R2dbcDatabase.suspendTransactionCatching(
+    transactionIsolation: IsolationLevel? = null,
+    readOnly: Boolean = false,
+    statement: suspend R2dbcTransaction.() -> T
+): Result<T, PgenException> = runCatching {
+    this@suspendTransactionCatching.suspendTransaction(
+        transactionIsolation = transactionIsolation,
+        readOnly = readOnly,
+    ) {
+        statement()
+    }
+}.mapPgenError()

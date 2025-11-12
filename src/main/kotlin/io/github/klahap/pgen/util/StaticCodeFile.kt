@@ -69,6 +69,7 @@ sealed interface StaticCodeFile {
             yield(listOf("util"), "Dsl.kt")
             yield(listOf("util"), "ConnectionConfig.kt")
             yield(listOf("util"), "IConnectionProperties.kt")
+            yield(listOf("util"), "PgenException.kt")
             when (config.connectionType) {
                 Config.ConnectionType.JDBC -> {
                     yield(listOf("util"), "JdbcDsl.kt")
@@ -78,6 +79,7 @@ sealed interface StaticCodeFile {
                 Config.ConnectionType.R2DBC -> {
                     yield(listOf("util"), "R2dbcDsl.kt")
                     yield(listOf("util"), "R2dbcSyncStatement.kt")
+                    yield(listOf("util"), "R2dbcExceptionUtil.kt")
                     yield(listOf("column_type"), "UtilR2dbc.kt")
                 }
             }
