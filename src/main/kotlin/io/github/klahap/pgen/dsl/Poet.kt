@@ -85,6 +85,11 @@ fun TypeSpec.Builder.addCompanionObject(
     block: TypeSpec.Builder.() -> Unit,
 ) = addType(TypeSpec.companionObjectBuilder().apply(block).build())
 
+fun TypeSpec.Builder.addObject(
+    name: String,
+    block: TypeSpec.Builder.() -> Unit,
+) = addType(TypeSpec.objectBuilder(name).apply(block).build())
+
 fun buildFunction(
     name: String,
     block: FunSpec.Builder.() -> Unit,

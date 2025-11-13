@@ -2,6 +2,9 @@ package default_code.util
 
 import io.github.goquati.kotlin.util.Result
 import io.github.goquati.kotlin.util.failureOrNull
+import default_code.column_type.Constraint
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.InternalApi
 
 data class PgenErrorDetails(
     val code: String,
@@ -64,23 +67,61 @@ sealed class PgenException(
     class Other(msg: String, t: Throwable? = null) : PgenException(msg, t)
 }
 
+fun Constraint.matches(error: PgenException.Sql): Boolean {
+    if (error.details.schemaName != table.schemaName) return false
+    @OptIn(InternalApi::class)
+    if (error.details.tableName != table.tableNameWithoutScheme) return false
+    return error.details.constraintName == name
+}
+
+fun Column<*>.matches(error: PgenException.Sql): Boolean {
+    if (error.details.schemaName != table.schemaName) return false
+    @OptIn(InternalApi::class)
+    if (error.details.tableName != table.tableNameWithoutScheme) return false
+    return error.details.columnName == name
+}
+
 inline fun <T> Result<T, PgenException>.onIntegrityConstraintViolation(block: (PgenException.IntegrityConstraintViolation) -> Unit) =
     apply { (failureOrNull as? PgenException.IntegrityConstraintViolation)?.also { block(it) } }
 
 inline fun <T> Result<T, PgenException>.onRestrictViolation(block: (PgenException.RestrictViolation) -> Unit) =
     apply { (failureOrNull as? PgenException.RestrictViolation)?.also { block(it) } }
 
-inline fun <T> Result<T, PgenException>.onNotNullViolation(block: (PgenException.NotNullViolation) -> Unit) =
-    apply { (failureOrNull as? PgenException.NotNullViolation)?.also { block(it) } }
+inline fun <T> Result<T, PgenException>.onNotNullViolation(
+    column: Column<*>? = null,
+    block: (PgenException.NotNullViolation) -> Unit
+) = apply {
+    (failureOrNull as? PgenException.NotNullViolation)?.also { error ->
+        if (column?.matches(error) ?: true) block(error)
+    }
+}
 
-inline fun <T> Result<T, PgenException>.onForeignKeyViolation(block: (PgenException.ForeignKeyViolation) -> Unit) =
-    apply { (failureOrNull as? PgenException.ForeignKeyViolation)?.also { block(it) } }
+inline fun <T> Result<T, PgenException>.onForeignKeyViolation(
+    constraint: Constraint.ForeignKey? = null,
+    block: (PgenException.ForeignKeyViolation) -> Unit,
+) = apply {
+    (failureOrNull as? PgenException.ForeignKeyViolation)?.also { error ->
+        if (constraint?.matches(error) ?: true) block(error)
+    }
+}
 
-inline fun <T> Result<T, PgenException>.onUniqueViolation(block: (PgenException.UniqueViolation) -> Unit) =
-    apply { (failureOrNull as? PgenException.UniqueViolation)?.also { block(it) } }
+inline fun <T> Result<T, PgenException>.onUniqueViolation(
+    constraint: Constraint.IUnique? = null,
+    block: (PgenException.UniqueViolation) -> Unit,
+) = apply {
+    (failureOrNull as? PgenException.UniqueViolation)?.also { error ->
+        if (constraint?.matches(error) ?: true) block(error)
+    }
+}
 
-inline fun <T> Result<T, PgenException>.onCheckViolation(block: (PgenException.CheckViolation) -> Unit) =
-    apply { (failureOrNull as? PgenException.CheckViolation)?.also { block(it) } }
+inline fun <T> Result<T, PgenException>.onCheckViolation(
+    constraint: Constraint.Check? = null,
+    block: (PgenException.CheckViolation) -> Unit,
+) = apply {
+    (failureOrNull as? PgenException.CheckViolation)?.also { error ->
+        if (constraint?.matches(error) ?: true) block(error)
+    }
+}
 
 inline fun <T> Result<T, PgenException>.onExclusionViolation(block: (PgenException.ExclusionViolation) -> Unit) =
     apply { (failureOrNull as? PgenException.ExclusionViolation)?.also { block(it) } }

@@ -8,9 +8,14 @@ import kotlinx.serialization.Serializable
 data class Table(
     override val name: SqlObjectName,
     val columns: List<Column>,
-    val primaryKey: PrimaryKey?,
-    val foreignKeys: List<ForeignKey>,
+    val primaryKey: PrimaryKey? = null,
+    val foreignKeys: List<ForeignKey> = emptyList(),
+    val uniqueConstraints: List<String> = emptyList(),
+    val checkConstraints: List<String> = emptyList(),
 ) : SqlObject {
+    context(c: CodeGenContext)
+    val constraintsTypeName
+        get() = ClassName("${name.packageName.name}.${name.prettyName}", "Constraints")
     context(c: CodeGenContext)
     val entityTypeName
         get() = ClassName("${name.packageName.name}.${name.prettyName}", "Entity")

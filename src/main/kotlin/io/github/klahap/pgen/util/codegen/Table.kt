@@ -7,6 +7,7 @@ import io.github.klahap.pgen.dsl.addCode
 import io.github.klahap.pgen.dsl.addCompanionObject
 import io.github.klahap.pgen.dsl.addFunction
 import io.github.klahap.pgen.dsl.addInitializerBlock
+import io.github.klahap.pgen.dsl.addObject
 import io.github.klahap.pgen.dsl.addParameter
 import io.github.klahap.pgen.dsl.addProperty
 import io.github.klahap.pgen.dsl.buildDataClass
@@ -14,13 +15,13 @@ import io.github.klahap.pgen.dsl.buildObject
 import io.github.klahap.pgen.dsl.primaryConstructor
 import io.github.klahap.pgen.model.sql.Table
 import io.github.klahap.pgen.util.makeDifferent
-import kotlin.text.set
+import io.github.klahap.pgen.util.toCamelCase
 
 context(c: CodeGenContext)
 internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.name.prettyName) {
     val foreignKeysSingle = this@toTypeSpecInternal.foreignKeys.map { it.toTyped() }
         .filterIsInstance<Table.ForeignKeyTyped.SingleKey>()
-        .associate { it.reference.sourceColumn to (it.targetTable to it.reference.targetColumn) }
+        .associateBy { it.reference.sourceColumn }
     superclass(Poet.table)
     addSuperclassConstructorParameter(
         "%S",
@@ -33,9 +34,10 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
         ) {
             val postArgs = mutableListOf<Any>()
             val postfix = buildString {
-                foreignKeysSingle[column.name]?.let { foreignKey ->
-                    append(".references(%T.${foreignKey.second.pretty})")
-                    postArgs.add(foreignKey.first.typeName)
+                foreignKeysSingle[column.name]?.let { fKey ->
+                    append(".references(ref = %T.${fKey.reference.targetColumn.pretty}, fkName = %S)")
+                    postArgs.add(fKey.targetTable.typeName)
+                    postArgs.add(fKey.name)
                 }
                 if (column.isNullable)
                     append(".nullable()")
@@ -73,10 +75,70 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
             }
         }
 
+    addType(toConstraintsObject())
     addType(toTypeSpecEntity())
     addType(toTypeSpecUpdateEntity())
 }
 
+context(c: CodeGenContext)
+private fun Table.toConstraintsObject() = buildObject(this@toConstraintsObject.constraintsTypeName.simpleName) {
+
+    this@toConstraintsObject.primaryKey?.also { pkey ->
+        addProperty(
+            name = pkey.keyName.toCamelCase(capitalized = false),
+            type = c.poet.pKeyConstraint,
+        ) {
+            initializer(
+                "%T(table = %L, name = %S)",
+                c.poet.pKeyConstraint,
+                this@toConstraintsObject.name.prettyName,
+                pkey.keyName,
+            )
+        }
+    }
+
+    this@toConstraintsObject.foreignKeys.forEach { fkey ->
+        addProperty(
+            name = fkey.name.toCamelCase(capitalized = false),
+            type = c.poet.fKeyConstraint,
+        ) {
+            initializer(
+                "%T(table = %L, name = %S)",
+                c.poet.fKeyConstraint,
+                this@toConstraintsObject.name.prettyName,
+                fkey.name,
+            )
+        }
+    }
+
+    this@toConstraintsObject.uniqueConstraints.forEach { name ->
+        addProperty(
+            name = name.toCamelCase(capitalized = false),
+            type = c.poet.uniqueConstraint,
+        ) {
+            initializer(
+                "%T(table = %L, name = %S)",
+                c.poet.uniqueConstraint,
+                this@toConstraintsObject.name.prettyName,
+                name,
+            )
+        }
+    }
+
+    this@toConstraintsObject.checkConstraints.forEach { name ->
+        addProperty(
+            name = name.toCamelCase(capitalized = false),
+            type = c.poet.checkConstraint,
+        ) {
+            initializer(
+                "%T(table = %L, name = %S)",
+                c.poet.checkConstraint,
+                this@toConstraintsObject.name.prettyName,
+                name,
+            )
+        }
+    }
+}
 
 context(c: CodeGenContext)
 private fun Table.toTypeSpecEntity() = buildDataClass(this@toTypeSpecEntity.entityTypeName.simpleName) {

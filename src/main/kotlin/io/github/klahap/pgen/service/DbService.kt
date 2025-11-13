@@ -91,6 +91,8 @@ class DbService(
         val columns = getColumns(filter)
         val primaryKeys = getPrimaryKeys(filter)
         val foreignKeys = getForeignKeys(filter)
+        val uniqueConstraints = getUniqueConstraints(filter)
+        val checkConstraints = getCheckConstraints(filter)
         val tableNames = columns.keys + primaryKeys.keys + foreignKeys.keys
 
         return tableNames.map { tableName ->
@@ -99,6 +101,8 @@ class DbService(
                 columns = (columns[tableName] ?: emptyList()).sortedBy { it.pos },
                 primaryKey = primaryKeys[tableName],
                 foreignKeys = foreignKeys[tableName] ?: emptyList(),
+                uniqueConstraints = uniqueConstraints[tableName] ?: emptyList(),
+                checkConstraints = checkConstraints[tableName] ?: emptyList()
             )
         }
     }
@@ -326,6 +330,55 @@ class DbService(
                 )
                 meta.sourceTable to key
             }.groupBy({ it.first }, { it.second })
+    }
+
+    private fun getUniqueConstraints(filter: SqlObjectFilter): Map<SqlObjectName, List<String>> {
+        if (filter.isEmpty()) return emptyMap()
+        return connection.executeQuery(
+            """
+             SELECT
+                 tc.constraint_name as constraint_name,
+                 tc.table_schema AS schema,
+                 tc.table_name AS table_name
+             FROM information_schema.table_constraints AS tc
+             WHERE tc.constraint_type = 'UNIQUE'
+                AND ${filter.toFilterString(schemaField = "tc.table_schema", tableField = "tc.table_name")};
+            """
+        ) { resultSet ->
+            val table = SqlObjectName(
+                schema = dbName.toSchema(resultSet.getString("schema")!!),
+                name = resultSet.getString("table_name")!!,
+            )
+            val name = resultSet.getString("constraint_name")!!
+            table to name
+        }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { it.value.distinct().sorted() }
+    }
+
+    private fun getCheckConstraints(filter: SqlObjectFilter): Map<SqlObjectName, List<String>> {
+        if (filter.isEmpty()) return emptyMap()
+        return connection.executeQuery(
+            """
+             SELECT
+                 tc.constraint_name as constraint_name,
+                 tc.table_schema AS schema,
+                 tc.table_name AS table_name
+             FROM information_schema.table_constraints AS tc
+             WHERE tc.constraint_type = 'CHECK'
+                AND tc.constraint_name NOT LIKE '%_not_null'
+                AND ${filter.toFilterString(schemaField = "tc.table_schema", tableField = "tc.table_name")};
+            """
+        ) { resultSet ->
+            val table = SqlObjectName(
+                schema = dbName.toSchema(resultSet.getString("schema")!!),
+                name = resultSet.getString("table_name")!!,
+            )
+            val name = resultSet.getString("constraint_name")!!
+            table to name
+        }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { it.value.distinct().sorted() }
     }
 
     fun getCompositeTypes(compositeTypeNames: Set<SqlObjectName>): List<CompositeType> {

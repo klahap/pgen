@@ -9,6 +9,18 @@ import org.jetbrains.exposed.v1.core.Table
 import kotlin.enums.enumEntries
 import kotlin.reflect.KClass
 
+sealed interface Constraint {
+    val table: Table
+    val name: String
+
+    sealed interface IUnique : Constraint
+
+    data class PrimaryKey(override val table: Table, override val name: String) : IUnique
+    data class ForeignKey(override val table: Table, override val name: String) : Constraint
+    data class Unique(override val table: Table, override val name: String) : IUnique
+    data class Check(override val table: Table, override val name: String) : Constraint
+}
+
 fun <E> getArrayColumnType(columnType: ColumnType<E & Any>) =
     ArrayColumnType<E, List<E>>(delegate = columnType)
 
