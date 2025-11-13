@@ -2,6 +2,8 @@ package default_code.util
 
 import io.github.goquati.kotlin.util.Result
 import io.github.goquati.kotlin.util.failureOrNull
+import io.github.goquati.kotlin.util.QuatiException
+import io.github.goquati.kotlin.util.getOr
 import default_code.column_type.Constraint
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.InternalApi
@@ -131,3 +133,7 @@ inline fun <T> Result<T, PgenException>.onSqlException(block: (PgenException.Sql
 
 inline fun <T> Result<T, PgenException>.onNoneSqlException(block: (PgenException.Other) -> Unit) =
     apply { (failureOrNull as? PgenException.Other)?.also { block(it) } }
+
+fun Result<*, PgenException>.getOrThrowInternalServerError(msg: String) = getOr {
+    throw QuatiException.InternalServerError(msg, t = it)
+}
