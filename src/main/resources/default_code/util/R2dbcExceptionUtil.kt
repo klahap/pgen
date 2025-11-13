@@ -28,17 +28,14 @@ fun ErrorDetails.toPgenErrorDetails() = PgenErrorDetails(
     where = where.getOrNull(),
 )
 
-internal fun <T> kotlin.Result<T>.mapPgenError(): Result<T, PgenException> = mapError { t ->
-    when (t) {
-        is ExposedR2dbcException -> when (val e = t.cause) {
-            is PostgresqlException -> PgenException.of(
-                details = e.errorDetails.toPgenErrorDetails(),
-                t = t,
-            )
+internal fun Throwable.toPgenError(): PgenException = when (this) {
+    is ExposedR2dbcException -> when (val e = cause) {
+        is PostgresqlException -> PgenException.of(
+            details = e.errorDetails.toPgenErrorDetails(),
+        )
 
-            else -> PgenException.Other(msg = t.message ?: "", t = t)
-        }
-
-        else -> PgenException.Other(msg = t.message ?: "", t = t)
+        else -> PgenException.Other(msg = message ?: "")
     }
-}
+
+    else -> PgenException.Other(msg = message ?: "")
+}.apply { addSuppressed(this@toPgenError) }

@@ -24,6 +24,9 @@ import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
 import org.jetbrains.exposed.v1.r2dbc.transactions.transactionManager
 import default_code.column_type.SqlStringHelper
 import shared_code.ILocalConfigContext
+import io.github.goquati.kotlin.util.failure
+import io.github.goquati.kotlin.util.success
+import kotlinx.coroutines.supervisorScope
 
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
     select(buildList(builder))
@@ -177,11 +180,15 @@ suspend fun <T> R2dbcDatabase.suspendTransactionCatching(
     transactionIsolation: IsolationLevel? = null,
     readOnly: Boolean = false,
     statement: suspend R2dbcTransaction.() -> T
-): Result<T, PgenException> = runCatching {
-    this@suspendTransactionCatching.suspendTransaction(
-        transactionIsolation = transactionIsolation,
-        readOnly = readOnly,
-    ) {
-        statement()
+): Result<T, PgenException> = supervisorScope {
+    try {
+        this@suspendTransactionCatching.suspendTransaction(
+            transactionIsolation = transactionIsolation,
+            readOnly = readOnly,
+        ) {
+            statement()
+        }.success
+    } catch (t: Throwable) {
+        t.toPgenError().failure
     }
-}.mapPgenError()
+}
