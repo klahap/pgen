@@ -20,5 +20,6 @@ class DomainColumnType<T : Any>(
 
     override fun sqlType(): String = sqlType
     override fun notNullValueToDB(value: T): Any = getter.get(value)
+    override fun nonNullValueToString(value: T): String = "'$value'"
     override fun valueFromDB(value: Any): T = builder(value)
 }
