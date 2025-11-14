@@ -70,7 +70,7 @@ sealed class PgenException(
     class Other(msg: String, t: Throwable? = null) : PgenException(msg, t)
 }
 
-private fun Table.matches(error: io.github.klahap.pgen.util.PgenException.Sql): Boolean {
+private fun Table.matches(error: PgenException.Sql): Boolean {
     if (error.details.schemaName != schemaName) return false
     @OptIn(InternalApi::class)
     if (error.details.tableName != tableNameWithoutScheme) return false
