@@ -19,6 +19,9 @@ sealed interface Constraint {
     data class ForeignKey(override val table: Table, override val name: String) : Constraint
     data class Unique(override val table: Table, override val name: String) : IUnique
     data class Check(override val table: Table, override val name: String) : Constraint
+    data class NotNull(val column: Column<out Any>, override val name: String) : Constraint {
+        override val table = column.table
+    }
 }
 
 fun <E> getArrayColumnType(columnType: ColumnType<E & Any>) =

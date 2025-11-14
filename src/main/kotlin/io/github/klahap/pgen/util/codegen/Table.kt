@@ -1,5 +1,6 @@
 package io.github.klahap.pgen.util.codegen
 
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
@@ -7,7 +8,6 @@ import io.github.klahap.pgen.dsl.addCode
 import io.github.klahap.pgen.dsl.addCompanionObject
 import io.github.klahap.pgen.dsl.addFunction
 import io.github.klahap.pgen.dsl.addInitializerBlock
-import io.github.klahap.pgen.dsl.addObject
 import io.github.klahap.pgen.dsl.addParameter
 import io.github.klahap.pgen.dsl.addProperty
 import io.github.klahap.pgen.dsl.buildDataClass
@@ -82,58 +82,50 @@ internal fun Table.toTypeSpecInternal() = buildObject(this@toTypeSpecInternal.na
 
 context(c: CodeGenContext)
 private fun Table.toConstraintsObject() = buildObject(this@toConstraintsObject.constraintsTypeName.simpleName) {
+    fun addConstraint(
+        name: String,
+        clazz: ClassName,
+        additionalFormat: String = "",
+        additionalArgs: Array<Any> = arrayOf(),
+    ) = addProperty(
+        name = name.toCamelCase(capitalized = false),
+        type = clazz,
+    ) {
+        @Suppress("SpreadOperator")
+        initializer(
+            "%T(table = %L, name = %S$additionalFormat)",
+            clazz,
+            this@toConstraintsObject.name.prettyName,
+            name,
+            *additionalArgs,
+        )
+    }
 
     this@toConstraintsObject.primaryKey?.also { pkey ->
-        addProperty(
-            name = pkey.keyName.toCamelCase(capitalized = false),
-            type = c.poet.pKeyConstraint,
-        ) {
-            initializer(
-                "%T(table = %L, name = %S)",
-                c.poet.pKeyConstraint,
-                this@toConstraintsObject.name.prettyName,
-                pkey.keyName,
-            )
-        }
+        addConstraint(name = pkey.keyName, clazz = c.poet.pKeyConstraint)
     }
-
     this@toConstraintsObject.foreignKeys.forEach { fkey ->
-        addProperty(
-            name = fkey.name.toCamelCase(capitalized = false),
-            type = c.poet.fKeyConstraint,
-        ) {
-            initializer(
-                "%T(table = %L, name = %S)",
-                c.poet.fKeyConstraint,
-                this@toConstraintsObject.name.prettyName,
-                fkey.name,
-            )
-        }
+        addConstraint(name = fkey.name, clazz = c.poet.fKeyConstraint)
     }
-
     this@toConstraintsObject.uniqueConstraints.forEach { name ->
-        addProperty(
-            name = name.toCamelCase(capitalized = false),
-            type = c.poet.uniqueConstraint,
-        ) {
-            initializer(
-                "%T(table = %L, name = %S)",
-                c.poet.uniqueConstraint,
-                this@toConstraintsObject.name.prettyName,
-                name,
-            )
-        }
+        addConstraint(name = name, clazz = c.poet.uniqueConstraint)
     }
-
     this@toConstraintsObject.checkConstraints.forEach { name ->
+        addConstraint(name = name, clazz = c.poet.checkConstraint)
+    }
+    this@toConstraintsObject.columns.filter { !it.isNullable }.forEach { column ->
+        val name = column.name.value + "_not_null"
+        val clazz = c.poet.notNullConstraint
         addProperty(
             name = name.toCamelCase(capitalized = false),
-            type = c.poet.checkConstraint,
+            type = clazz,
         ) {
+            @Suppress("SpreadOperator")
             initializer(
-                "%T(table = %L, name = %S)",
-                c.poet.checkConstraint,
+                "%T(column = %L.%L, name = %S)",
+                clazz,
                 this@toConstraintsObject.name.prettyName,
+                column.prettyName,
                 name,
             )
         }

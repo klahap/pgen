@@ -100,6 +100,7 @@ class CodeGenContext(
         val pKeyConstraint = packageCustomColumn.className("Constraint", "PrimaryKey")
         val uniqueConstraint = packageCustomColumn.className("Constraint", "Unique")
         val checkConstraint = packageCustomColumn.className("Constraint", "Check")
+        val notNullConstraint = packageCustomColumn.className("Constraint", "NotNull")
         val getPgEnumByLabel = packageCustomColumn.className("getPgEnumByLabel")
         val toDbObject = packageCustomColumn.className("toDbObject")
         val stringLike = sharedPackageName.className("StringLike")

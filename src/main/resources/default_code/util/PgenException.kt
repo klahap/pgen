@@ -5,6 +5,7 @@ import io.github.goquati.kotlin.util.failureOrNull
 import io.github.goquati.kotlin.util.QuatiException
 import io.github.goquati.kotlin.util.getOr
 import default_code.column_type.Constraint
+import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.InternalApi
 
@@ -69,18 +70,20 @@ sealed class PgenException(
     class Other(msg: String, t: Throwable? = null) : PgenException(msg, t)
 }
 
-fun Constraint.matches(error: PgenException.Sql): Boolean {
-    if (error.details.schemaName != table.schemaName) return false
+private fun Table.matches(error: io.github.klahap.pgen.util.PgenException.Sql): Boolean {
+    if (error.details.schemaName != schemaName) return false
     @OptIn(InternalApi::class)
-    if (error.details.tableName != table.tableNameWithoutScheme) return false
-    return error.details.constraintName == name
+    if (error.details.tableName != tableNameWithoutScheme) return false
+    return true
 }
 
-fun Column<*>.matches(error: PgenException.Sql): Boolean {
-    if (error.details.schemaName != table.schemaName) return false
-    @OptIn(InternalApi::class)
-    if (error.details.tableName != table.tableNameWithoutScheme) return false
-    return error.details.columnName == name
+fun Column<out Any>.matches(error: PgenException.Sql): Boolean =
+    table.matches(error) && error.details.columnName == name
+
+fun Constraint.matches(error: PgenException.Sql): Boolean = when (this) {
+    is Constraint.NotNull -> column.matches(error)
+    is Constraint.Check, is Constraint.ForeignKey,
+    is Constraint.PrimaryKey, is Constraint.Unique -> table.matches(error) && error.details.constraintName == name
 }
 
 inline fun <T> Result<T, PgenException>.onIntegrityConstraintViolation(block: (PgenException.IntegrityConstraintViolation) -> Unit) =
@@ -89,12 +92,21 @@ inline fun <T> Result<T, PgenException>.onIntegrityConstraintViolation(block: (P
 inline fun <T> Result<T, PgenException>.onRestrictViolation(block: (PgenException.RestrictViolation) -> Unit) =
     apply { (failureOrNull as? PgenException.RestrictViolation)?.also { block(it) } }
 
-inline fun <T> Result<T, PgenException>.onNotNullViolation(
-    column: Column<*>? = null,
+inline fun <T, C : Any> Result<T, PgenException>.onNotNullViolation(
+    column: Column<C>? = null,
     block: (PgenException.NotNullViolation) -> Unit
 ) = apply {
     (failureOrNull as? PgenException.NotNullViolation)?.also { error ->
         if (column?.matches(error) ?: true) block(error)
+    }
+}
+
+inline fun <T> Result<T, PgenException>.onNotNullViolation(
+    constraint: Constraint.NotNull? = null,
+    block: (PgenException.NotNullViolation) -> Unit,
+) = apply {
+    (failureOrNull as? PgenException.NotNullViolation)?.also { error ->
+        if (constraint?.matches(error) ?: true) block(error)
     }
 }
 
@@ -125,15 +137,21 @@ inline fun <T> Result<T, PgenException>.onCheckViolation(
     }
 }
 
+inline fun <T> Result<T, PgenException>.onSqlViolation(
+    constraint: Constraint? = null,
+    block: (PgenException.Sql) -> Unit,
+) = apply {
+    (failureOrNull as? PgenException.Sql)?.also { error ->
+        if (constraint?.matches(error) ?: true) block(error)
+    }
+}
+
 inline fun <T> Result<T, PgenException>.onExclusionViolation(block: (PgenException.ExclusionViolation) -> Unit) =
     apply { (failureOrNull as? PgenException.ExclusionViolation)?.also { block(it) } }
-
-inline fun <T> Result<T, PgenException>.onSqlException(block: (PgenException.Sql) -> Unit) =
-    apply { (failureOrNull as? PgenException.Sql)?.also { block(it) } }
 
 inline fun <T> Result<T, PgenException>.onNoneSqlException(block: (PgenException.Other) -> Unit) =
     apply { (failureOrNull as? PgenException.Other)?.also { block(it) } }
 
-fun Result<*, PgenException>.getOrThrowInternalServerError(msg: String) = getOr {
+fun <T> Result<T, PgenException>.getOrThrowInternalServerError(msg: String): T = getOr {
     throw QuatiException.InternalServerError(msg, t = it)
 }

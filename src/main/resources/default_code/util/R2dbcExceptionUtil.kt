@@ -1,7 +1,5 @@
 package default_code.util
 
-import io.github.goquati.kotlin.util.Result
-import io.github.goquati.kotlin.util.mapError
 import io.r2dbc.postgresql.api.ErrorDetails
 import io.r2dbc.postgresql.api.PostgresqlException
 import org.jetbrains.exposed.v1.r2dbc.ExposedR2dbcException
