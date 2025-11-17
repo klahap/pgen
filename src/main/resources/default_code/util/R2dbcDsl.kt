@@ -26,11 +26,16 @@ import default_code.column_type.SqlStringHelper
 import shared_code.ILocalConfigContext
 import io.github.goquati.kotlin.util.failure
 import io.github.goquati.kotlin.util.success
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.supervisorScope
 import org.jetbrains.exposed.v1.core.ISqlExpressionBuilder
 import org.jetbrains.exposed.v1.core.Op
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.statements.UpdateStatement
 import org.jetbrains.exposed.v1.r2dbc.deleteWhere
+import org.jetbrains.exposed.v1.r2dbc.updateReturning
 
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
     select(buildList(builder))
@@ -200,14 +205,35 @@ suspend fun <T> R2dbcDatabase.suspendTransactionCatching(
 context(t: R2dbcTransaction)
 suspend fun <T : Table> T.deleteSingle(
     op: T.(ISqlExpressionBuilder) -> Op<Boolean>
-): DeleteResult {
+): DeleteSingleResult {
     val sp = t.connection.setSavepoint("pgenDeleteSingle")
     val count = deleteWhere { op(it) }
     if (count > 1) t.connection.rollback(sp)
     t.connection.releaseSavepoint(sp)
     return when (count) {
-        0 -> DeleteResult.None
-        1 -> DeleteResult.Deleted
-        else -> DeleteResult.TooMany
+        0 -> DeleteSingleResult.None
+        1 -> DeleteSingleResult.Success
+        else -> DeleteSingleResult.TooMany
+    }
+}
+
+context(t: R2dbcTransaction)
+suspend fun <T : Table> T.updateSingle(
+    returning: List<Expression<*>> = columns,
+    where: SqlExpressionBuilder.() -> Op<Boolean>,
+    body: T.(UpdateStatement) -> Unit
+): UpdateSingleResult {
+    val sp = t.connection.setSavepoint("pgenUpdateSingle")
+    val rows = updateReturning(
+        returning = returning,
+        where = where,
+        body = body,
+    ).take(2).toList()
+    if (rows.size > 1) t.connection.rollback(sp)
+    t.connection.releaseSavepoint(sp)
+    return when (rows.size) {
+        0 -> UpdateSingleResult.None
+        1 -> UpdateSingleResult.Success(rows.single())
+        else -> UpdateSingleResult.TooMany
     }
 }

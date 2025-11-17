@@ -87,14 +87,27 @@ infix fun ExpressionWithColumnType<List<String>?>.arrayContains(pattern: String)
     expr2 = QueryParameter(value = pattern, sqlType = TextColumnType()),
 )
 
-sealed interface DeleteResult {
+
+sealed interface DeleteSingleResult {
     fun getOrThrow(msg: String): Unit = when (this) {
-        Deleted -> Unit
+        Success -> Unit
         None -> throw QuatiException.NotFound("$msg — nothing to delete")
         TooMany -> throw QuatiException.Conflict("$msg — multiple matches found")
     }
 
-    data object None : DeleteResult
-    data object Deleted : DeleteResult
-    data object TooMany : DeleteResult
+    data object None : DeleteSingleResult
+    data object Success : DeleteSingleResult
+    data object TooMany : DeleteSingleResult
+}
+
+sealed interface UpdateSingleResult {
+    fun getOrThrow(msg: String): ResultRow = when (this) {
+        is Success -> data
+        None -> throw QuatiException.NotFound("$msg — nothing to update")
+        TooMany -> throw QuatiException.Conflict("$msg — multiple matches found")
+    }
+
+    data object None : UpdateSingleResult
+    class Success(val data: ResultRow) : UpdateSingleResult
+    data object TooMany : UpdateSingleResult
 }
