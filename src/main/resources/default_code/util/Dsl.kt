@@ -107,6 +107,12 @@ sealed interface UpdateSingleResult {
         TooMany -> throw QuatiException.Conflict("$msg — multiple matches found")
     }
 
+    fun getOrNull(msg: String): ResultRow? = when (this) {
+        is Success -> data
+        None -> null
+        TooMany -> null
+    }
+
     data object None : UpdateSingleResult
     class Success(val data: ResultRow) : UpdateSingleResult
     data object TooMany : UpdateSingleResult
