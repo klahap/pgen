@@ -1,5 +1,6 @@
 package default_code.util
 
+import io.github.goquati.kotlin.util.QuatiException
 import org.jetbrains.exposed.v1.core.Alias
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.Op
@@ -29,6 +30,7 @@ object IsUpdate : Expression<Boolean>() {
         queryBuilder.append("xmax != 0")
     }
 }
+
 operator fun <T> ResultRow.get(column: Column<T>, alias: Alias<*>?): T = when (alias) {
     null -> this[column]
     else -> this[alias[column]]
@@ -84,3 +86,15 @@ infix fun ExpressionWithColumnType<List<String>?>.arrayContains(pattern: String)
     expr1 = this,
     expr2 = QueryParameter(value = pattern, sqlType = TextColumnType()),
 )
+
+sealed interface DeleteResult {
+    fun getOrThrow(msg: String): Unit = when (this) {
+        Deleted -> Unit
+        None -> throw QuatiException.NotFound("$msg — nothing to delete")
+        TooMany -> throw QuatiException.Conflict("$msg — multiple matches found")
+    }
+
+    data object None : DeleteResult
+    data object Deleted : DeleteResult
+    data object TooMany : DeleteResult
+}

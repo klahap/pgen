@@ -27,6 +27,10 @@ import shared_code.ILocalConfigContext
 import io.github.goquati.kotlin.util.failure
 import io.github.goquati.kotlin.util.success
 import kotlinx.coroutines.supervisorScope
+import org.jetbrains.exposed.v1.core.ISqlExpressionBuilder
+import org.jetbrains.exposed.v1.core.Op
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 
 fun ColumnSet.select(builder: MutableList<Expression<*>>.() -> Unit): Query =
     select(buildList(builder))
@@ -190,5 +194,20 @@ suspend fun <T> R2dbcDatabase.suspendTransactionCatching(
         }.success
     } catch (t: Throwable) {
         t.toPgenError().failure
+    }
+}
+
+context(t: R2dbcTransaction)
+suspend fun <T : Table> T.deleteSingle(
+    op: T.(ISqlExpressionBuilder) -> Op<Boolean>
+): DeleteResult {
+    val sp = t.connection.setSavepoint("pgenDeleteSingle")
+    val count = deleteWhere { op(it) }
+    if (count > 1) t.connection.rollback(sp)
+    t.connection.releaseSavepoint(sp)
+    return when (count) {
+        0 -> DeleteResult.None
+        1 -> DeleteResult.Deleted
+        else -> DeleteResult.TooMany
     }
 }
