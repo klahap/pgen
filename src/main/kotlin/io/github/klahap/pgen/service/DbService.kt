@@ -98,11 +98,11 @@ class DbService(
         return tableNames.map { tableName ->
             Table(
                 name = tableName,
-                columns = (columns[tableName] ?: emptyList()).sortedBy { it.pos },
+                columns = columns[tableName]?.sortedBy { it.pos } ?: emptyList(),
                 primaryKey = primaryKeys[tableName],
-                foreignKeys = foreignKeys[tableName] ?: emptyList(),
-                uniqueConstraints = uniqueConstraints[tableName] ?: emptyList(),
-                checkConstraints = checkConstraints[tableName] ?: emptyList()
+                foreignKeys = foreignKeys[tableName]?.sortedBy { it.name } ?: emptyList(),
+                uniqueConstraints = uniqueConstraints[tableName]?.sorted() ?: emptyList(),
+                checkConstraints = checkConstraints[tableName]?.sorted() ?: emptyList()
             )
         }
     }
