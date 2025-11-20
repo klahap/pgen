@@ -14,17 +14,18 @@ class DomainColumnType<T : Any>(
     private val getter: KProperty1<T, Any>
 
     init {
-        require(kClass.isValue) { "$kClass is not a value class" }
+        val prop = kClass.memberProperties.singleOrNull() ?: run {
+            val paramName = kClass.primaryConstructor
+                .let { it ?: error("$kClass has no primary constructor") }
+                .parameters.singleOrNull()?.name
+                ?: error("$kClass does not have exactly one constructor parameter")
 
-        val paramName = kClass.primaryConstructor
-            .let { it ?: error("$kClass has no primary constructor") }
-            .parameters.singleOrNull()?.name
-            ?: error("$kClass does not have exactly one constructor parameter")
+            kClass.memberProperties
+                .singleOrNull { it.name == paramName }
+                .let { it ?: error("property '$paramName' not found in $kClass") }
+        }
 
-        getter = kClass.memberProperties
-            .singleOrNull { it.name == paramName }
-            .let { it ?: error("property '$paramName' not found in $kClass") }
-            .also { require(!it.returnType.isMarkedNullable) { "property '$paramName' of $kClass is nullable" } }
+        getter = prop.also { require(!it.returnType.isMarkedNullable) { "property of $kClass is nullable" } }
             .let { @Suppress("UNCHECKED_CAST") (it as KProperty1<T, Any>) }
     }
 
