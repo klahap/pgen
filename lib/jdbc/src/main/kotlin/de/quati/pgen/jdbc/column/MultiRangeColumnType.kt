@@ -13,9 +13,12 @@ private fun <T : Comparable<T>> fromDb(
     value: Any,
     mapper: (PgenRawMultiRange) -> PgenMultiRange<T>,
 ): PgenMultiRange<T>? = when (value) {
-    is PGobject -> value.value?.takeIf { it.isNotBlank() }
-        ?.let { PgenRawMultiRange.parse(it) }
-        ?.let { mapper(it) }
+    is PGobject -> {
+        val raw: String? = value.value
+        raw?.takeIf { it.isNotBlank() }
+            ?.let { PgenRawMultiRange.parse(it) }
+            ?.let { mapper(it) }
+    }
 
     else -> error("Retrieved unexpected value of type ${value::class.simpleName}")
 }

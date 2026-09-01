@@ -28,7 +28,7 @@ services:
     ports:
       - "55032:5432"
     profiles: [ jdbc-wal ]
-    command: ["postgres", "-c", "wal_level=logical"]
+    command: ["postgres", "-c", "wal_level=logical", "-c", "output_plugin_libraries=wal2json"]
     build:
       dockerfile_inline: |
         FROM postgres:17.2
@@ -53,7 +53,7 @@ services:
     ports:
       - "55132:5432"
     profiles: [ r2dbc-wal ]
-    command: ["postgres", "-c", "wal_level=logical"]
+    command: ["postgres", "-c", "wal_level=logical", "-c", "output_plugin_libraries=wal2json"]
     build:
       dockerfile_inline: |
         FROM postgres:17.2

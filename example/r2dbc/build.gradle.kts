@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
-    kotlin("jvm") version "2.2.0"
+    kotlin("jvm") version "2.4.10"
     id("de.quati.pgen") version "0.49.0"
 }
 
@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    val exposedVersion = "1.1.0"
+    val exposedVersion = "1.5.0"
     implementation("de.quati.pgen:r2dbc:0.49.0")
     implementation("org.jetbrains.exposed:exposed-core:${exposedVersion}")
     implementation("org.jetbrains.exposed:exposed-crypt:${exposedVersion}")
@@ -25,8 +25,8 @@ dependencies {
     implementation("org.postgresql:r2dbc-postgresql:1.0.7.RELEASE")
     implementation("io.r2dbc:r2dbc-pool:1.0.2.RELEASE")
 
-    implementation("de.quati:kotlin-util:2.0.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("de.quati:kotlin-util:2.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
 }
 

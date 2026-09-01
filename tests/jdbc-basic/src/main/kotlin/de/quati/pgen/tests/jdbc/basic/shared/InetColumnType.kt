@@ -10,12 +10,15 @@ import java.net.InetAddress
 class InetColumnType : ColumnType<IPAddress>() {
     override fun sqlType(): String = "inet"
     override fun notNullValueToDB(value: IPAddress): Any = value.toString()
-    override fun valueFromDB(value: Any): IPAddress = when (value) {
-        is PGobject -> value.value!!
-        is InetAddress -> value.hostAddress
-        is String -> value
-        else -> value.toString()
-    }.let { IPAddressString(it).toAddress() }
+    override fun valueFromDB(value: Any): IPAddress {
+        val raw: String = when (value) {
+            is PGobject -> value.value!!
+            is InetAddress -> value.hostAddress
+            is String -> value
+            else -> value.toString()
+        }
+        return IPAddressString(raw).toAddress()
+    }
 
     override fun setParameter(stmt: PreparedStatementApi, index: Int, value: Any?) {
         val parameterValue: PGobject? = value?.let {

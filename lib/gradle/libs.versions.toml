@@ -1,8 +1,12 @@
 [versions]
-kotlin = "2.2.0"
-exposed = "1.1.0"
-quati-util = "2.0.0"
-kotlinx-serialization = "1.9.0"
+kotlin = "2.4.10"
+exposed = "1.5.0"
+quati-util = "2.4.0"
+kotlinx-serialization = "1.11.0"
+jdbc-postgresql = "42.7.13"
+r2dbc-postgresql = "1.1.2.RELEASE"
+r2dbc-pool = "1.0.2.RELEASE"
+slf4j = "2.0.17"
 
 [libraries]
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
@@ -12,13 +16,13 @@ exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "e
 exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
 
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
-jdbc-postgresql = { module = "org.postgresql:postgresql", version = "42.7.7" }
+jdbc-postgresql = { module = "org.postgresql:postgresql", version.ref = "jdbc-postgresql" }
 
 exposed-r2dbc = { module = "org.jetbrains.exposed:exposed-r2dbc", version.ref = "exposed" }
-r2dbc-postgresql = { module = "org.postgresql:r2dbc-postgresql", version = "1.0.7.RELEASE" }
-r2dbc-pool = { module = "io.r2dbc:r2dbc-pool", version = "1.0.2.RELEASE" }
+r2dbc-postgresql = { module = "org.postgresql:r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
+r2dbc-pool = { module = "io.r2dbc:r2dbc-pool", version.ref = "r2dbc-pool" }
 
-slf4j = { module = "org.slf4j:slf4j-api", version = "2.0.17" }
+slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 
 goquati-base = { module = "de.quati:kotlin-util", version.ref = "quati-util" }
 

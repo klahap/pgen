@@ -27,6 +27,9 @@ internal fun Domain.toTypeSpecInternal() = buildValueClass(this@toTypeSpecIntern
     addFunction(name = "toString") {
         addModifiers(KModifier.OVERRIDE)
         returns(String::class)
-        addCode("return $dataFieldName.toString()")
+        if (isStringLike)
+            addCode("return $dataFieldName")
+        else
+            addCode("return $dataFieldName.toString()")
     }
 }

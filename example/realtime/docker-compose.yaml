@@ -13,4 +13,4 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "55422:5432"
-    command: ["postgres", "-c", "wal_level=logical"]
+    command: ["postgres", "-c", "wal_level=logical", "-c", "output_plugin_libraries=wal2json"]

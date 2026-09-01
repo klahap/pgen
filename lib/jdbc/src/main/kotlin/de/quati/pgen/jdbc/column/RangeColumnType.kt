@@ -12,9 +12,12 @@ private fun <T : Comparable<T>, R : ClosedRange<T>> fromDb(
     value: Any,
     mapper: (PgenRawRange) -> R,
 ): R? = when (value) {
-    is PGobject -> value.value?.takeIf { it.isNotBlank() }
-        ?.let { PgenRawRange.parse(it) }
-        ?.let { mapper(it) }
+    is PGobject -> {
+        val raw: String? = value.value
+        raw?.takeIf { it.isNotBlank() }
+            ?.let { PgenRawRange.parse(it) }
+            ?.let { mapper(it) }
+    }
 
     else -> error("Retrieved unexpected value of type ${value::class.simpleName}")
 }
